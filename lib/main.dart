@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code/models/info_model.dart';
+import 'package:share_plus/share_plus.dart';
 
 void main() {
   runApp(MyApp());
@@ -53,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!mounted) return;
     setState(() {
       final mapList = barcodeScanRes.split('|').toList();
-      print(mapList);
+      // print(mapList);
       data.add(InfoModel(
           cccd: '${mapList[0]}/${mapList[1]}',
           name: mapList[2],
@@ -67,12 +68,28 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void shareFile() async {
+    print('aaa');
+    final root =
+        await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
+    final path =
+        '${root?.path}/user_data.csv'; //data/user/0/com.example.qr_code/app_flutter
+    final files = <XFile>[];
+    files.add(XFile(path, name: 'Gear Back Up'));
+
+    /// Share Plugin
+    Share.shareXFiles(files, text: 'My Exported Data!');
+  }
+
   Widget infoUser(List<InfoModel> info) {
-    print(info);
+    // print(info);
     if (info.isEmpty) {
-      return const Text(
-        'Data Is Empty!!!',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+      return ElevatedButton(
+        onPressed: shareFile,
+        child: const Text(
+          'Data Is Empty!!!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+        ),
       );
     }
     return Column(
@@ -127,46 +144,47 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _generateCsvFile() async {
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.storage,
-    ].request();
+    try {
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+      ].request();
 
-    List<List<dynamic>> rows = [];
+      List<List<dynamic>> rows = [];
 
-    List<dynamic> row = [];
-    row.add("stt");
-    row.add("cccd");
-    row.add("name");
-    row.add("birthDay");
-    row.add("gender");
-    row.add("address");
-    row.add("createdDate");
-    row.add("createAdd");
-    rows.add(row);
-    for (int i = 0; i < data.length; i++) {
       List<dynamic> row = [];
-      row.add(i + 1);
-      row.add(data[i].cccd);
-      row.add(data[i].name);
-      row.add(data[i].birthDay);
-      row.add(data[i].gender);
-      row.add(data[i].address);
-      row.add(data[i].createdDate);
-      row.add(data[i].createAdd);
+      row.add("stt");
+      row.add("cccd");
+      row.add("name");
+      row.add("birthDay");
+      row.add("gender");
+      row.add("address");
+      row.add("createdDate");
+      row.add("createAdd");
       rows.add(row);
+      for (int i = 0; i < data.length; i++) {
+        List<dynamic> row = [];
+        row.add(i + 1);
+        row.add(data[i].cccd);
+        row.add(data[i].name);
+        row.add(data[i].birthDay);
+        row.add(data[i].gender);
+        row.add(data[i].address);
+        row.add(data[i].createdDate);
+        row.add(data[i].createAdd);
+        rows.add(row);
+      }
+
+      String csv = const ListToCsvConverter().convert(rows);
+      final root =
+          await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
+      final path = '${root?.path}/user_data.csv';
+      File f = await File(path).create(recursive: true);
+      await f.writeAsString(csv);
+    } on PlatformException catch (ex) {
+      print(ex);
+    } catch (ex) {
+      print(ex);
     }
-
-    String csv = const ListToCsvConverter().convert(rows);
-
-    // String dir = await ExtStorage.getExternalStoragePublicDirectory(
-    //     ExtStorage.DIRECTORY_DOWNLOADS);
-    // print("dir $dir");
-    // String file = "$dir";
-    final root = await getTemporaryDirectory();
-    print('await$root');
-    final path = '${root.path}/user_data.csv';
-    File f = await File(path).create(recursive: true);
-    await f.writeAsString(csv);
     // await Share.shareFiles([path], subject: 'Shared file');
   }
 
