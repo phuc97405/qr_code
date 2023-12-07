@@ -47,24 +47,35 @@ class _MyHomePageState extends State<MyHomePage> {
     String barcodeScanRes;
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Cancel', true, ScanMode.BARCODE);
-      debugPrint('barcodeScanRes$barcodeScanRes');
+          '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
       // ignore: unrelated_type_equality_checks
       if (!mounted || barcodeScanRes == -1) return;
       setState(() {
         isSave = false;
         final mapList = barcodeScanRes.split('|').toList();
         if (mapList.length != 7) return;
-        // print(mapList);
-        data.add(InfoModel(
-            id: '${UniqueKey().hashCode}',
-            cccd: '${mapList[0]}/${mapList[1]}',
-            name: mapList[2],
-            birthDay: mapList[3],
-            gender: mapList[4],
-            address: mapList[5],
-            createdDate: mapList[6],
-            createAdd: DateFormat('dd-MM-yyyy kk:mm').format(DateTime.now())));
+        var indexExist = data.indexWhere((element) =>
+            element.cccd == '${mapList[0]}/${mapList[1]}' && element.isCheckIn);
+        if (indexExist == -1) {
+          data.insert(
+              0,
+              InfoModel(
+                  isCheckIn: true,
+                  id: '${UniqueKey().hashCode}',
+                  cccd: '${mapList[0]}/${mapList[1]}',
+                  name: mapList[2],
+                  birthDay: mapList[3],
+                  gender: mapList[4],
+                  address: mapList[5],
+                  createdDate: mapList[6],
+                  createAdd:
+                      DateFormat('dd-MM-yyyy kk:mm').format(DateTime.now()),
+                  updateAt: ''));
+        } else {
+          data[indexExist].isCheckIn = !data[indexExist].isCheckIn;
+          data[indexExist].updateAt =
+              DateFormat('dd-MM-yyyy kk:mm').format(DateTime.now());
+        }
       });
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
@@ -98,7 +109,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final checkPathExistence = await Directory(path).exists();
     if (!checkPathExistence) return;
     final input = File(path).openRead();
-    print('input$checkPathExistence');
     List mapList = await input
         .transform(utf8.decoder)
         .transform(const CsvToListConverter())
@@ -114,10 +124,12 @@ class _MyHomePageState extends State<MyHomePage> {
             gender: '${element[4]}',
             address: '${element[5]}',
             createdDate: '${element[6]}',
-            createAdd: '${element[7]}'));
+            createAdd: '${element[7]}',
+            isCheckIn: element[8],
+            updateAt: '${element[9]}'));
       });
       setState(() {
-        data.addAll(usersMap);
+        data.insertAll(0, usersMap);
       });
     }
   }
@@ -151,7 +163,7 @@ class _MyHomePageState extends State<MyHomePage> {
           title: const Text('Notion'),
           content: const Text(
             'Are you sure you want to delete it?',
-            style: TextStyle(fontSize: 15),
+            style: TextStyle(fontSize: 18),
           ),
           actions: <Widget>[
             TextButton(
@@ -198,24 +210,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       margin: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                           borderRadius:
-                              const BorderRadius.all(Radius.circular(10)),
-                          border: Border.all(width: 1, color: Colors.black26)),
+                              const BorderRadius.all(Radius.circular(20)),
+                          border: Border.all(
+                              width: 2,
+                              color: (info[index].isCheckIn
+                                  ? Colors.green
+                                  : Colors.red))),
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // RichText(
-                            //     text: TextSpan(
-                            //         text: 'ID: ',
-                            //         style: const TextStyle(
-                            //             fontSize: 18, color: Colors.grey),
-                            //         children: [
-                            //       TextSpan(
-                            //           text: info[index].id,
-                            //           style: const TextStyle(
-                            //               color: Colors.black,
-                            //               fontSize: 18,
-                            //               fontWeight: FontWeight.bold))
-                            //     ])),
                             const SizedBox(
                               height: 5,
                             ),
@@ -223,36 +226,34 @@ class _MyHomePageState extends State<MyHomePage> {
                                 text: TextSpan(
                                     text: 'CCCD/CMT: ',
                                     style: const TextStyle(
-                                        fontSize: 18, color: Colors.grey),
+                                        fontSize: 17, color: Colors.grey),
                                     children: [
                                   TextSpan(
                                       text: info[index].cccd,
                                       style: const TextStyle(
                                           color: Colors.black,
-                                          fontSize: 18,
+                                          fontSize: 17,
                                           fontWeight: FontWeight.bold))
                                 ])),
                             const SizedBox(
                               height: 5,
                             ),
-
                             Row(children: [
                               const Text('Họ Và Tên: ',
                                   style: TextStyle(
-                                      fontSize: 18, color: Colors.grey)),
+                                      fontSize: 17, color: Colors.grey)),
                               Flexible(
                                 child: Text(info[index].name,
                                     style: const TextStyle(
                                         color: Colors.black,
-                                        fontSize: 18,
+                                        fontSize: 17,
                                         fontWeight: FontWeight.bold)),
                               )
                             ]),
-
                             Row(children: [
                               const Text('Ngày Sinh: ',
                                   style: TextStyle(
-                                      fontSize: 18, color: Colors.grey)),
+                                      fontSize: 17, color: Colors.grey)),
                               Flexible(
                                 child: Text(
                                     info[index]
@@ -261,7 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         .replaceRange(5, 5, '-'),
                                     style: const TextStyle(
                                         color: Colors.black,
-                                        fontSize: 18,
+                                        fontSize: 17,
                                         fontWeight: FontWeight.bold)),
                               )
                             ]),
@@ -272,24 +273,23 @@ class _MyHomePageState extends State<MyHomePage> {
                                 text: TextSpan(
                                     text: 'Giới Tính: ',
                                     style: const TextStyle(
-                                        fontSize: 18, color: Colors.grey),
+                                        fontSize: 17, color: Colors.grey),
                                     children: [
                                   TextSpan(
                                       text: info[index].gender,
                                       style: const TextStyle(
                                           color: Colors.black,
-                                          fontSize: 18,
+                                          fontSize: 17,
                                           fontWeight: FontWeight.bold))
                                 ])),
                             const SizedBox(
                               height: 5,
                             ),
-
                             RichText(
                                 text: TextSpan(
                                     text: 'Ngày Cấp: ',
                                     style: const TextStyle(
-                                        fontSize: 18, color: Colors.grey),
+                                        fontSize: 17, color: Colors.grey),
                                     children: [
                                   TextSpan(
                                       text: info[index]
@@ -298,36 +298,23 @@ class _MyHomePageState extends State<MyHomePage> {
                                           .replaceRange(5, 5, '-'),
                                       style: const TextStyle(
                                           color: Colors.black,
-                                          fontSize: 18,
+                                          fontSize: 17,
                                           fontWeight: FontWeight.bold))
                                 ])),
                             const SizedBox(
                               height: 5,
                             ),
-                            // RichText(
-                            //     text: TextSpan(
-                            //         text: 'Tạo Lúc: ',
-                            //         style: const TextStyle(
-                            //             fontSize: 18, color: Colors.grey),
-                            //         children: [
-                            //       TextSpan(
-                            //           text: info[index].createAdd,
-                            //           style: const TextStyle(
-                            //               color: Colors.black,
-                            //               fontSize: 18,
-                            //               fontWeight: FontWeight.bold))
-                            //     ])),
                             Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text('Thường Trú: ',
                                       style: TextStyle(
-                                          fontSize: 18, color: Colors.grey)),
+                                          fontSize: 17, color: Colors.grey)),
                                   Flexible(
                                     child: Text(info[index].address,
                                         style: const TextStyle(
                                             color: Colors.black,
-                                            fontSize: 18,
+                                            fontSize: 17,
                                             fontWeight: FontWeight.bold)),
                                   )
                                 ]),
@@ -337,9 +324,24 @@ class _MyHomePageState extends State<MyHomePage> {
                           ]),
                     ),
                     Positioned(
-                        right: 15,
-                        bottom: 10,
-                        child: Text(info[index].createAdd))
+                        right: 20,
+                        top: 20,
+                        child: Text(
+                          (info[index].isCheckIn ? 'IN' : "OUT"),
+                          style: TextStyle(
+                              fontSize: 20,
+                              color: (info[index].isCheckIn
+                                  ? Colors.green
+                                  : Colors.red)),
+                        )),
+                    Positioned(
+                        left: 20,
+                        bottom: 12,
+                        child: Text(info[index].createAdd)),
+                    Positioned(
+                        right: 20,
+                        bottom: 12,
+                        child: Text(info[index].updateAt)),
                   ]),
                 )).toList());
   }
@@ -359,6 +361,8 @@ class _MyHomePageState extends State<MyHomePage> {
       row.add("address");
       row.add("createdDate");
       row.add("createAdd");
+      row.add("isCheckIn");
+      row.add("updateAt");
       rows.add(row);
       for (int i = 0; i < data.length; i++) {
         List<dynamic> row = [];
@@ -370,6 +374,8 @@ class _MyHomePageState extends State<MyHomePage> {
         row.add(data[i].address);
         row.add(data[i].createdDate);
         row.add(data[i].createAdd);
+        row.add(data[i].isCheckIn);
+        row.add(data[i].updateAt);
         rows.add(row);
       }
       String csv = const ListToCsvConverter().convert(rows);
@@ -439,7 +445,11 @@ class _MyHomePageState extends State<MyHomePage> {
         floatingActionButton: FloatingActionButton(
           tooltip: 'Add User', // used by assistive technologies
           onPressed: scanQRNormal,
-          child: const Icon(Icons.qr_code),
+          backgroundColor: Colors.green[100],
+          child: const Icon(
+            Icons.qr_code,
+            color: Colors.green,
+          ),
         ));
   }
 }
