@@ -8,7 +8,7 @@ import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:qr_code/models/info_model.dart';
+import 'package:my_room/models/info_model.dart';
 import 'package:share_plus/share_plus.dart';
 
 void main() {
@@ -435,7 +435,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
           title: const Text(
-            "QR Code",
+            "My Room",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
         ),

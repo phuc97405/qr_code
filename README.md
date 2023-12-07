@@ -1,4 +1,4 @@
-# qr_code
+# my_room
 
 A new Flutter project.
 

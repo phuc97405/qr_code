@@ -7,7 +7,7 @@
 
 
     <application
-        android:label="qr_code"
+        android:label="My Room"
         android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
