@@ -64,8 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
             gender: mapList[4],
             address: mapList[5],
             createdDate: mapList[6],
-            createAdd:
-                DateFormat('dd-MM-yyyy kk:mm:ss').format(DateTime.now())));
+            createAdd: DateFormat('dd-MM-yyyy kk:mm').format(DateTime.now())));
       });
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
@@ -190,146 +189,156 @@ class _MyHomePageState extends State<MyHomePage> {
                   onLongPress: () {
                     _dialogDelete(context, index);
                   },
-                  child: Container(
-                    padding: EdgeInsets.all(15),
-                    margin: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(10)),
-                        border: Border.all(width: 1, color: Colors.black26)),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          RichText(
-                              text: TextSpan(
-                                  text: '_ID: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].id,
+                  child: Stack(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 20),
+                      margin: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(10)),
+                          border: Border.all(width: 1, color: Colors.black26)),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // RichText(
+                            //     text: TextSpan(
+                            //         text: 'ID: ',
+                            //         style: const TextStyle(
+                            //             fontSize: 18, color: Colors.grey),
+                            //         children: [
+                            //       TextSpan(
+                            //           text: info[index].id,
+                            //           style: const TextStyle(
+                            //               color: Colors.black,
+                            //               fontSize: 18,
+                            //               fontWeight: FontWeight.bold))
+                            //     ])),
+                            const SizedBox(
+                              height: 5,
+                            ),
+                            RichText(
+                                text: TextSpan(
+                                    text: 'CCCD/CMT: ',
+                                    style: const TextStyle(
+                                        fontSize: 18, color: Colors.grey),
+                                    children: [
+                                  TextSpan(
+                                      text: info[index].cccd,
+                                      style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold))
+                                ])),
+                            const SizedBox(
+                              height: 5,
+                            ),
+
+                            Row(children: [
+                              const Text('Họ Và Tên: ',
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.grey)),
+                              Flexible(
+                                child: Text(info[index].name,
                                     style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_CCCD/CMT: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].cccd,
-                                    style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_Họ Và Tên: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].name,
-                                    style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_Ngày Sinh: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].birthDay,
-                                    style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_Giới Tính: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].gender,
-                                    style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_Thường Trú: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].address,
-                                    style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_Ngày Cấp: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index]
-                                        .createdDate
+                                        fontWeight: FontWeight.bold)),
+                              )
+                            ]),
+
+                            Row(children: [
+                              const Text('Ngày Sinh: ',
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.grey)),
+                              Flexible(
+                                child: Text(
+                                    info[index]
+                                        .birthDay
                                         .replaceRange(2, 2, '-')
                                         .replaceRange(5, 5, '-'),
                                     style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                          const SizedBox(
-                            height: 5,
-                          ),
-                          RichText(
-                              text: TextSpan(
-                                  text: '_Tạo Lúc: ',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  children: [
-                                TextSpan(
-                                    text: info[index].createAdd,
+                                        fontWeight: FontWeight.bold)),
+                              )
+                            ]),
+                            const SizedBox(
+                              height: 5,
+                            ),
+                            RichText(
+                                text: TextSpan(
+                                    text: 'Giới Tính: ',
                                     style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold))
-                              ])),
-                        ]),
-                  ),
+                                        fontSize: 18, color: Colors.grey),
+                                    children: [
+                                  TextSpan(
+                                      text: info[index].gender,
+                                      style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold))
+                                ])),
+                            const SizedBox(
+                              height: 5,
+                            ),
+
+                            RichText(
+                                text: TextSpan(
+                                    text: 'Ngày Cấp: ',
+                                    style: const TextStyle(
+                                        fontSize: 18, color: Colors.grey),
+                                    children: [
+                                  TextSpan(
+                                      text: info[index]
+                                          .createdDate
+                                          .replaceRange(2, 2, '-')
+                                          .replaceRange(5, 5, '-'),
+                                      style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold))
+                                ])),
+                            const SizedBox(
+                              height: 5,
+                            ),
+                            // RichText(
+                            //     text: TextSpan(
+                            //         text: 'Tạo Lúc: ',
+                            //         style: const TextStyle(
+                            //             fontSize: 18, color: Colors.grey),
+                            //         children: [
+                            //       TextSpan(
+                            //           text: info[index].createAdd,
+                            //           style: const TextStyle(
+                            //               color: Colors.black,
+                            //               fontSize: 18,
+                            //               fontWeight: FontWeight.bold))
+                            //     ])),
+                            Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Thường Trú: ',
+                                      style: TextStyle(
+                                          fontSize: 18, color: Colors.grey)),
+                                  Flexible(
+                                    child: Text(info[index].address,
+                                        style: const TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
+                                  )
+                                ]),
+                            const SizedBox(
+                              height: 5,
+                            ),
+                          ]),
+                    ),
+                    Positioned(
+                        right: 15,
+                        bottom: 10,
+                        child: Text(info[index].createAdd))
+                  ]),
                 )).toList());
   }
 
@@ -377,58 +386,58 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        backgroundColor: Colors.grey,
-        leading: GestureDetector(
-            onTap: () {
-              if (isSave && data.isNotEmpty) {
-                shareFile();
-              } else {
-                showSnackbar('Please Save File !!!');
-              }
-            },
-            child: Icon(
-              Icons.share,
-              color: isSave && data.isNotEmpty ? Colors.black : Colors.black54,
-              size: 30,
-            )),
-        leadingWidth: 50,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-                onTap: () {
-                  if (!isSave) {
-                    _writeCsvFile();
-                    setState(() {
-                      isSave = true;
-                    });
-                    showSnackbar('Saving...');
-                  } else {
-                    showSnackbar('Please Add User With QR Code !!!');
-                  }
-                },
-                child: Icon(
-                  Icons.save,
-                  color: isSave ? Colors.black54 : Colors.black,
-                  size: 30,
-                )),
+        appBar: AppBar(
+          centerTitle: true,
+          backgroundColor: Colors.green[300],
+          leading: GestureDetector(
+              onTap: () {
+                if (isSave && data.isNotEmpty) {
+                  shareFile();
+                } else {
+                  showSnackbar('Please Save File !!!');
+                }
+              },
+              child: Icon(
+                Icons.share,
+                color:
+                    isSave && data.isNotEmpty ? Colors.black : Colors.black54,
+                size: 30,
+              )),
+          leadingWidth: 50,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: GestureDetector(
+                  onTap: () {
+                    if (!isSave) {
+                      _writeCsvFile();
+                      setState(() {
+                        isSave = true;
+                      });
+                      showSnackbar('Saving...');
+                    } else {
+                      showSnackbar('Please Add User With QR Code !!!');
+                    }
+                  },
+                  child: Icon(
+                    Icons.save,
+                    color: isSave ? Colors.black54 : Colors.black,
+                    size: 30,
+                  )),
+            ),
+          ],
+          title: const Text(
+            "QR Code",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
-        ],
-        title: const Text(
-          "QR Code",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
-      ),
-      body: data.isEmpty
-          ? emptyWidget()
-          : SingleChildScrollView(child: infoUser(data)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Add User', // used by assistive technologies
-        onPressed: scanQRNormal,
-        child: const Icon(Icons.qr_code),
-      ),
-    );
+        body: data.isEmpty
+            ? emptyWidget()
+            : SingleChildScrollView(child: infoUser(data)),
+        floatingActionButton: FloatingActionButton(
+          tooltip: 'Add User', // used by assistive technologies
+          onPressed: scanQRNormal,
+          child: const Icon(Icons.qr_code),
+        ));
   }
 }
