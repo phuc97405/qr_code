@@ -95,8 +95,10 @@ class _MyHomePageState extends State<MyHomePage> {
         await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path = '${directory.path}/user_data.csv';
     List<InfoModel> usersMap = [];
-
+    final checkPathExistence = await Directory(path).exists();
+    if (!checkPathExistence) return;
     final input = File(path).openRead();
+    print('input$checkPathExistence');
     List mapList = await input
         .transform(utf8.decoder)
         .transform(const CsvToListConverter())
