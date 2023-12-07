@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
@@ -23,13 +24,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({
+  const MyHomePage({
     Key? key,
   }) : super(key: key);
 
@@ -38,121 +39,308 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // '052099013346|215465826|Lê Ngọc Phúc|01011999|Nam|Xóm Cầu Sào, Thôn Mỹ Bình, Cát Thắng, Phù Cát, Bình Định|15032022';
-
   List<InfoModel> data = [];
+  final DateFormat dateFormat = DateFormat("yyyy-MM-dd");
+  bool isSave = true;
 
-  Future<void> scanBarcodeNormal() async {
+  Future<void> scanQRNormal() async {
     String barcodeScanRes;
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           '#ff6666', 'Cancel', true, ScanMode.BARCODE);
-      debugPrint(barcodeScanRes);
+      debugPrint('barcodeScanRes$barcodeScanRes');
+      // ignore: unrelated_type_equality_checks
+      if (!mounted || barcodeScanRes == -1) return;
+      setState(() {
+        isSave = false;
+        final mapList = barcodeScanRes.split('|').toList();
+        if (mapList.length != 7) return;
+        // print(mapList);
+        data.add(InfoModel(
+            id: '${UniqueKey().hashCode}',
+            cccd: '${mapList[0]}/${mapList[1]}',
+            name: mapList[2],
+            birthDay: mapList[3],
+            gender: mapList[4],
+            address: mapList[5],
+            createdDate: mapList[6],
+            createAdd:
+                DateFormat('dd-MM-yyyy kk:mm:ss').format(DateTime.now())));
+      });
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
+    } catch (e) {
+      print(e);
     }
-    if (!mounted) return;
-    setState(() {
-      final mapList = barcodeScanRes.split('|').toList();
-      // print(mapList);
-      data.add(InfoModel(
-          cccd: '${mapList[0]}/${mapList[1]}',
-          name: mapList[2],
-          birthDay: mapList[3],
-          gender: mapList[4],
-          address: mapList[5],
-          createdDate: mapList[6],
-          createAdd:
-              DateFormat('yyyy-MM-dd – kk:mm:ss').format(DateTime.now())));
-      // _scanBarcodeResult = barcodeScanRes;
-    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadFileCsv();
+  }
+
+  Widget emptyWidget() {
+    return Center(
+      child: Image.asset(
+        'lib/images/img_empty.png',
+        width: 300,
+        height: 250,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+
+  void loadFileCsv() async {
+    final directory =
+        await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
+    final path = '${directory.path}/user_data.csv';
+    List<InfoModel> usersMap = [];
+
+    final input = File(path).openRead();
+    List mapList = await input
+        .transform(utf8.decoder)
+        .transform(const CsvToListConverter())
+        .toList();
+    mapList.removeAt(0);
+    if (mapList.isNotEmpty) {
+      mapList.forEach((element) {
+        usersMap.add(InfoModel(
+            id: '${element[0]}',
+            cccd: '${element[1]}',
+            name: '${element[2]}',
+            birthDay: '${element[3]}',
+            gender: '${element[4]}',
+            address: '${element[5]}',
+            createdDate: '${element[6]}',
+            createAdd: '${element[7]}'));
+      });
+      setState(() {
+        data.addAll(usersMap);
+      });
+    }
+  }
+
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showSnackbar(
+      String text) {
+    return ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(text),
+      duration: const Duration(seconds: 2),
+    ));
   }
 
   void shareFile() async {
     print('aaa');
-    final root =
+    final directory =
         await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path =
-        '${root?.path}/user_data.csv'; //data/user/0/com.example.qr_code/app_flutter
-    final files = <XFile>[];
-    files.add(XFile(path, name: 'Gear Back Up'));
+        '${directory.path}/user_data.csv'; //data/user/0/com.example.qr_code/app_flutter
+    if (path.isEmpty) return;
 
-    /// Share Plugin
-    Share.shareXFiles(files, text: 'My Exported Data!');
+    final files = <XFile>[];
+    files.add(XFile(path, name: 'My Data File'));
+    Share.shareXFiles(files, text: 'My Data File');
+  }
+
+  Future<void> _dialogDelete(BuildContext context, int index) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Notion'),
+          content: const Text(
+            'Are you sure you want to delete it?',
+            style: TextStyle(fontSize: 15),
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Delete'),
+              onPressed: () {
+                setState(() {
+                  data.removeAt(index);
+                });
+                _writeCsvFile();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget infoUser(List<InfoModel> info) {
-    // print(info);
-    if (info.isEmpty) {
-      return ElevatedButton(
-        onPressed: shareFile,
-        child: const Text(
-          'Data Is Empty!!!',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-        ),
-      );
-    }
     return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: List.generate(
             info.length,
-            (index) => Container(
-                  padding: const EdgeInsets.all(20),
-                  margin: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      border: Border.all(width: 1, color: Colors.black26)),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '_CCCD/CMT: ${info[index].cccd}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '_Họ Và Tên: ${info[index].name}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '_Ngày Sinh: ${info[index].birthDay}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '_Giới Tính: ${info[index].gender}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '_ĐC Thường trú: ${info[index].address}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '_Ngày Cấp: ${info[index].createdDate}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '_Tạo Lúc: ${info[index].createAdd}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w500),
-                        )
-                      ]),
+            (index) => GestureDetector(
+                  onLongPress: () {
+                    _dialogDelete(context, index);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(15),
+                    margin: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(10)),
+                        border: Border.all(width: 1, color: Colors.black26)),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                              text: TextSpan(
+                                  text: '_ID: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].id,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_CCCD/CMT: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].cccd,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_Họ Và Tên: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].name,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_Ngày Sinh: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].birthDay,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_Giới Tính: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].gender,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_Thường Trú: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].address,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_Ngày Cấp: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index]
+                                        .createdDate
+                                        .replaceRange(2, 2, '-')
+                                        .replaceRange(5, 5, '-'),
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                          const SizedBox(
+                            height: 5,
+                          ),
+                          RichText(
+                              text: TextSpan(
+                                  text: '_Tạo Lúc: ',
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.grey),
+                                  children: [
+                                TextSpan(
+                                    text: info[index].createAdd,
+                                    style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold))
+                              ])),
+                        ]),
+                  ),
                 )).toList());
   }
 
-  void _generateCsvFile() async {
+  void _writeCsvFile() async {
     try {
       Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,
       ].request();
-
       List<List<dynamic>> rows = [];
-
       List<dynamic> row = [];
-      row.add("stt");
+      row.add("id");
       row.add("cccd");
       row.add("name");
       row.add("birthDay");
@@ -163,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
       rows.add(row);
       for (int i = 0; i < data.length; i++) {
         List<dynamic> row = [];
-        row.add(i + 1);
+        row.add(data[i].id);
         row.add(data[i].cccd);
         row.add(data[i].name);
         row.add(data[i].birthDay);
@@ -173,11 +361,10 @@ class _MyHomePageState extends State<MyHomePage> {
         row.add(data[i].createAdd);
         rows.add(row);
       }
-
       String csv = const ListToCsvConverter().convert(rows);
-      final root =
+      final directory =
           await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-      final path = '${root?.path}/user_data.csv';
+      final path = '${directory.path}/user_data.csv';
       File f = await File(path).create(recursive: true);
       await f.writeAsString(csv);
     } on PlatformException catch (ex) {
@@ -185,26 +372,62 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (ex) {
       print(ex);
     }
-    // await Share.shareFiles([path], subject: 'Shared file');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Colors.grey,
+        leading: GestureDetector(
+            onTap: () {
+              if (isSave && data.isNotEmpty) {
+                shareFile();
+              } else {
+                showSnackbar('Please Save File !!!');
+              }
+            },
+            child: Icon(
+              Icons.share,
+              color: isSave && data.isNotEmpty ? Colors.black : Colors.black54,
+              size: 30,
+            )),
+        leadingWidth: 50,
         actions: [
-          ElevatedButton(
-              onPressed: _generateCsvFile, child: const Icon(Icons.summarize))
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+                onTap: () {
+                  if (!isSave) {
+                    _writeCsvFile();
+                    setState(() {
+                      isSave = true;
+                    });
+                    showSnackbar('Saving...');
+                  } else {
+                    showSnackbar('Please Add User With QR Code !!!');
+                  }
+                },
+                child: Icon(
+                  Icons.save,
+                  color: isSave ? Colors.black54 : Colors.black,
+                  size: 30,
+                )),
+          ),
         ],
-        title: const Text("QR Code & Barcode Scanner"),
+        title: const Text(
+          "QR Code",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
       ),
-      body: Center(
-        child: SingleChildScrollView(child: infoUser(data)),
-      ),
+      body: data.isEmpty
+          ? emptyWidget()
+          : SingleChildScrollView(child: infoUser(data)),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add User', // used by assistive technologies
-        onPressed: scanBarcodeNormal,
-        child: const Icon(Icons.add),
+        onPressed: scanQRNormal,
+        child: const Icon(Icons.qr_code),
       ),
     );
   }

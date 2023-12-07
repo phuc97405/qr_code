@@ -1,4 +1,5 @@
 class InfoModel {
+  String id;
   String cccd;
   String name;
   String birthDay;
@@ -7,7 +8,8 @@ class InfoModel {
   String createdDate;
   String createAdd;
   InfoModel(
-      {required this.cccd,
+      {required this.id,
+      required this.cccd,
       required this.name,
       required this.birthDay,
       required this.address,
