@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
+import 'package:my_room/components/base_widgets.dart';
 import 'package:my_room/models/info_model.dart';
+import 'package:my_room/modules/user_detail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
@@ -173,23 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _rowInfo(String type, String text) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Flexible(
-          flex: 1,
-          child: Text(type,
-              style: const TextStyle(fontSize: 17, color: Colors.grey))),
-      Flexible(
-        flex: 2,
-        child: Text(text,
-            style: const TextStyle(
-                color: Colors.black,
-                fontSize: 17,
-                fontWeight: FontWeight.bold)),
-      )
-    ]);
-  }
-
   Widget _infoUser(List<InfoModel> info) {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,6 +184,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   onLongPress: () {
                     _dialogDelete(context, index);
                   },
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                UserDetail(user: info[index])));
+                  },
                   child: Stack(children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -207,6 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                           borderRadius:
                               const BorderRadius.all(Radius.circular(20)),
+                          color: info[index].isCheckIn
+                              ? Colors.green[100]
+                              : Colors.red[100],
                           border: Border.all(
                               width: 2,
                               color: (info[index].isCheckIn
@@ -218,26 +213,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(
                               height: 5,
                             ),
-                            _rowInfo('CCCD/CMT: ', info[index].cccd),
+                            BaseWidgets.instance
+                                .rowInfo('Tên: ', info[index].name),
+                            //  BaseWidgets(('Tên: ', info[index].name),
                             const SizedBox(
                               height: 5,
                             ),
-                            _rowInfo('Họ Và Tên: ', info[index].name),
-                            const SizedBox(
-                              height: 5,
-                            ),
-                            _rowInfo(
+                            BaseWidgets.instance.rowInfo(
                               'Ngày Sinh: ',
                               info[index]
                                   .birthDay
                                   .replaceRange(2, 2, '-')
                                   .replaceRange(5, 5, '-'),
                             ),
-                            _rowInfo('Giới Tính: ', info[index].gender),
+                            BaseWidgets.instance
+                                .rowInfo('Giới Tính: ', info[index].gender),
                             const SizedBox(
                               height: 5,
                             ),
-                            _rowInfo(
+                            BaseWidgets.instance.rowInfo(
                                 'Ngày Cấp: ',
                                 info[index]
                                     .createdDate
@@ -246,7 +240,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(
                               height: 5,
                             ),
-                            _rowInfo('Thường trú: ', info[index].address),
+                            BaseWidgets.instance
+                                .rowInfo('CCCD/CMT: ', info[index].cccd),
+                            const SizedBox(
+                              height: 5,
+                            ),
+                            BaseWidgets.instance
+                                .rowInfo('Thường trú: ', info[index].address),
                           ]),
                     ),
                     Positioned(
@@ -318,6 +318,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  int currentPageIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -366,9 +368,6 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
         ),
-        body: data.isEmpty
-            ? _emptyWidget()
-            : SingleChildScrollView(child: _infoUser(data)),
         floatingActionButton: FloatingActionButton(
           tooltip: 'Add User', // used by assistive technologies
           onPressed: _scanQRNormal,
@@ -377,6 +376,32 @@ class _HomeScreenState extends State<HomeScreen> {
             Icons.qr_code,
             color: Colors.green,
           ),
-        ));
+        ),
+        bottomNavigationBar: NavigationBar(
+          onDestinationSelected: (int index) {
+            setState(() {
+              currentPageIndex = index;
+            });
+          },
+          indicatorColor: Colors.green,
+          selectedIndex: currentPageIndex,
+          destinations: const [
+            NavigationDestination(
+              selectedIcon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Badge(child: Icon(Icons.settings_outlined)),
+              label: 'Settings',
+            ),
+          ],
+        ),
+        body: <Widget>[
+          data.isEmpty
+              ? _emptyWidget()
+              : SingleChildScrollView(child: _infoUser(data)),
+          const Text('Settings')
+        ][currentPageIndex]);
   }
 }
