@@ -10,18 +10,21 @@ class BaseWidgets {
   BaseWidgets._init();
 
   Widget rowInfo(String type, String text) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Expanded(
-          flex: 1,
+          flex: 2,
           child: Text(type,
-              style: const TextStyle(fontSize: 17, color: Colors.grey))),
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w300))),
       Expanded(
-        flex: 2,
+        flex: 5,
         child: Text(text,
             style: const TextStyle(
                 color: Colors.black,
-                fontSize: 17,
-                fontWeight: FontWeight.bold)),
+                fontSize: 15,
+                fontWeight: FontWeight.w500)),
       )
     ]);
   }

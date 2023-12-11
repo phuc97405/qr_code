@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/base_widgets.dart';
+import 'package:my_room/extensions/context_extensions.dart';
 import 'package:my_room/models/info_model.dart';
-import 'package:my_room/modules/user_detail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
@@ -22,8 +22,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<InfoModel> data = [];
-  final DateFormat dateFormat = DateFormat("yyyy-MM-dd");
-  bool isSave = true;
 
   Future<void> _scanQRNormal() async {
     String barcodeScanRes;
@@ -50,14 +48,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   address: mapList[5],
                   createdDate: mapList[6],
                   createAdd:
-                      DateFormat('dd-MM-yyyy kk:mm').format(DateTime.now()),
+                      DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
                   updateAt: ''));
         } else {
           data[indexExist].isCheckIn = !data[indexExist].isCheckIn;
           data[indexExist].updateAt =
-              DateFormat('dd-MM-yyyy kk:mm').format(DateTime.now());
+              DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
         }
-        isSave = false;
+        _writeCsvFile();
+        showSnackbar('Saving...');
       });
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
@@ -86,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _loadFileCsv() async {
     final directory =
         await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-    final path = '${directory.path}/user_data.csv';
+    final path = '${directory.path}/users.csv';
     List<InfoModel> usersMap = [];
     final checkPathExistence = await Directory(path).exists();
     if (!checkPathExistence) return;
@@ -127,13 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _shareFile() async {
     final directory =
         await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-    final path =
-        '${directory.path}/user_data.csv'; //data/user/0/com.example.qr_code/app_flutter
+    final path = '${directory.path}/users.csv';
     if (path.isEmpty) return;
 
     final files = <XFile>[];
-    files.add(XFile(path, name: 'My Data File'));
-    Share.shareXFiles(files, text: 'My Data File');
+    files.add(XFile(path, name: 'My Users File'));
+    Share.shareXFiles(files, text: 'My Users File');
   }
 
   Future<void> _dialogDelete(BuildContext context, int index) {
@@ -175,102 +173,218 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _infoUser(List<InfoModel> info) {
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(
-            info.length,
-            (index) => GestureDetector(
-                  onLongPress: () {
-                    _dialogDelete(context, index);
-                  },
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                UserDetail(user: info[index])));
-                  },
-                  child: Stack(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 20),
-                      margin: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(20)),
-                          color: info[index].isCheckIn
-                              ? Colors.green[100]
-                              : Colors.red[100],
-                          border: Border.all(
-                              width: 2,
-                              color: (info[index].isCheckIn
-                                  ? Colors.green
-                                  : Colors.red))),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                              height: 5,
-                            ),
-                            BaseWidgets.instance
-                                .rowInfo('Tên: ', info[index].name),
-                            //  BaseWidgets(('Tên: ', info[index].name),
-                            const SizedBox(
-                              height: 5,
-                            ),
-                            BaseWidgets.instance.rowInfo(
-                              'Ngày Sinh: ',
-                              info[index]
-                                  .birthDay
-                                  .replaceRange(2, 2, '-')
-                                  .replaceRange(5, 5, '-'),
-                            ),
-                            BaseWidgets.instance
-                                .rowInfo('Giới Tính: ', info[index].gender),
-                            const SizedBox(
-                              height: 5,
-                            ),
-                            BaseWidgets.instance.rowInfo(
-                                'Ngày Cấp: ',
-                                info[index]
-                                    .createdDate
-                                    .replaceRange(2, 2, '-')
-                                    .replaceRange(5, 5, '-')),
-                            const SizedBox(
-                              height: 5,
-                            ),
-                            BaseWidgets.instance
-                                .rowInfo('CCCD/CMT: ', info[index].cccd),
-                            const SizedBox(
-                              height: 5,
-                            ),
-                            BaseWidgets.instance
-                                .rowInfo('Thường trú: ', info[index].address),
-                          ]),
-                    ),
-                    Positioned(
-                        right: 20,
-                        top: 15,
+  Widget viewButton(IconData icon, String value, String type) {
+    return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+        decoration: BoxDecoration(
+            color: Colors.black38.withOpacity(0.1),
+            borderRadius: const BorderRadius.all(Radius.circular(10))),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              size: 25,
+              color: Colors.black,
+            ),
+            const SizedBox(
+              width: 5,
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  type,
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500),
+                )
+              ],
+            )
+          ],
+        )
+        //  ListTile(
+        //     tileColor: Colors.grey,
+        //     leading: Icon(
+        //       icon,
+        //       size: 30,
+        //       color: Colors.grey,
+        //     ),
+        //     title: Text(
+        //       value,
+        //       style: const TextStyle(color: Colors.red),
+        //     )),
+        );
+  }
+
+  Future showBottomSheet(InfoModel user) {
+    return showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            width: context.width,
+            decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    topRight: Radius.circular(10))),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      viewButton(Icons.timelapse_sharp, '2H', 'Timer'),
+                      viewButton(Icons.numbers, '202', 'Room'),
+                      viewButton(Icons.star_outline_sharp,
+                          user.updateAt.isEmpty ? 'In' : 'Out', 'Status'),
+                    ],
+                  ),
+                  Container(
+                    margin: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(20)),
+                        color: user.isCheckIn
+                            ? Colors.green[100]
+                            : Colors.red[100],
+                        border: Border.all(
+                            width: 2,
+                            color:
+                                (user.isCheckIn ? Colors.green : Colors.red))),
+                    child: Column(children: [
+                      BaseWidgets.instance.rowInfo('Name: ', user.name),
+                      //  BaseWidgets(('Tên: ', info[index].name),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      BaseWidgets.instance.rowInfo('Gender: ', user.gender),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      BaseWidgets.instance.rowInfo(
+                        'Birth: ',
+                        user.birthDay
+                            .replaceRange(2, 2, '-')
+                            .replaceRange(5, 5, '-'),
+                      ),
+
+                      BaseWidgets.instance.rowInfo(
+                          'Data Range: ',
+                          user.createdDate
+                              .replaceRange(2, 2, '-')
+                              .replaceRange(5, 5, '-')),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      BaseWidgets.instance.rowInfo('CCCD: ', user.cccd),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      BaseWidgets.instance.rowInfo('CheckIn: ', user.createAdd),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      BaseWidgets.instance.rowInfo('CheckOut: ',
+                          user.updateAt.isNotEmpty ? user.updateAt : '---'),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      BaseWidgets.instance.rowInfo('Address: ', user.address),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
+  List<Widget> _infoUser(List<InfoModel> info) {
+    return List.generate(
+        info.length,
+        (index) => GestureDetector(
+              onLongPress: () {
+                _dialogDelete(context, index);
+              },
+              onTap: () {
+                showBottomSheet(info[index]);
+              },
+              child: Stack(children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(5, 40, 5, 5),
+                  decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.all(Radius.circular(20)),
+                      color: info[index].isCheckIn
+                          ? Colors.green[100]
+                          : Colors.red[100],
+                      border: Border.all(
+                          width: 1,
+                          color: (info[index].isCheckIn
+                              ? Colors.green
+                              : Colors.red))),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        BaseWidgets.instance
+                            .rowInfo('Name: ', info[index].name),
+                        const SizedBox(
+                          height: 5,
+                        ),
+                        BaseWidgets.instance
+                            .rowInfo('Gender: ', info[index].gender),
+                        const SizedBox(
+                          height: 5,
+                        ),
+                        BaseWidgets.instance.rowInfo(
+                          'Birth: ',
+                          info[index]
+                              .birthDay
+                              .replaceRange(2, 2, '-')
+                              .replaceRange(5, 5, '-'),
+                        ),
+                        const SizedBox(
+                          height: 5,
+                        ),
+                        Text(info[index].createAdd,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w300)),
+                      ]),
+                ),
+                Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 3),
+                        decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12))),
                         child: Text(
                           (info[index].isCheckIn ? 'IN' : "OUT"),
                           style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
                               color: (info[index].isCheckIn
                                   ? Colors.green
                                   : Colors.red)),
-                        )),
-                    Positioned(
-                        left: 20,
-                        bottom: 12,
-                        child: Text(info[index].createAdd)),
-                    Positioned(
-                        right: 20,
-                        bottom: 12,
-                        child: Text(info[index].updateAt)),
-                  ]),
-                )).toList());
+                        ))),
+              ]),
+            ));
   }
 
   void _writeCsvFile() async {
@@ -308,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
       String csv = const ListToCsvConverter().convert(rows);
       final directory =
           await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-      final path = '${directory.path}/user_data.csv';
+      final path = '${directory.path}/users.csv';
       File f = await File(path).create(recursive: true);
       await f.writeAsString(csv);
     } on PlatformException catch (ex) {
@@ -328,48 +442,47 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.green[300],
           leading: GestureDetector(
               onTap: () {
-                if (isSave && data.isNotEmpty) {
+                if (data.isNotEmpty) {
                   _shareFile();
                 } else {
-                  showSnackbar('Please Save File !!!');
+                  showSnackbar('User export is empty!');
                 }
               },
               child: Icon(
                 Icons.share,
-                color:
-                    isSave && data.isNotEmpty ? Colors.black : Colors.black54,
+                color: data.isNotEmpty ? Colors.black : Colors.black54,
                 size: 30,
               )),
           leadingWidth: 50,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: GestureDetector(
-                  onTap: () {
-                    if (!isSave) {
-                      _writeCsvFile();
-                      setState(() {
-                        isSave = true;
-                      });
-                      showSnackbar('Saving...');
-                    } else {
-                      showSnackbar('Please Add User With QR Code !!!');
-                    }
-                  },
-                  child: Icon(
-                    Icons.save,
-                    color: isSave ? Colors.black54 : Colors.black,
-                    size: 30,
-                  )),
-            ),
-          ],
+          // actions: [
+          //   Padding(
+          //     padding: const EdgeInsets.only(right: 10),
+          //     child: GestureDetector(
+          //         onTap: () {
+          //           if (!isSave) {
+          //             _writeCsvFile();
+          //             setState(() {
+          //               isSave = true;
+          //             });
+          //             showSnackbar('Saving...');
+          //           } else {
+          //             showSnackbar('Please Add User With QR Code !!!');
+          //           }
+          //         },
+          //         child: Icon(
+          //           Icons.save,
+          //           color: isSave ? Colors.black54 : Colors.black,
+          //           size: 30,
+          //         )),
+          //   ),
+          // ],
           title: const Text(
             "My Room",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          tooltip: 'Add User', // used by assistive technologies
+          tooltip: 'scan', // used by assistive technologies
           onPressed: _scanQRNormal,
           backgroundColor: Colors.green[100],
           child: const Icon(
@@ -400,7 +513,13 @@ class _HomeScreenState extends State<HomeScreen> {
         body: <Widget>[
           data.isEmpty
               ? _emptyWidget()
-              : SingleChildScrollView(child: _infoUser(data)),
+              : GridView.count(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(5),
+                  crossAxisSpacing: 5,
+                  mainAxisSpacing: 5,
+                  crossAxisCount: 2,
+                  children: _infoUser(data)),
           const Text('Settings')
         ][currentPageIndex]);
   }
