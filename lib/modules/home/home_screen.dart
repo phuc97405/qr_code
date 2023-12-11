@@ -12,6 +12,7 @@ import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl_browser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<InfoModel> data = [];
+  List<DateTime> dateHistory = [];
 
   Future<void> _scanQRNormal() async {
     String barcodeScanRes;
@@ -69,6 +71,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadFileCsv();
+    dateHistory = List<DateTime>.generate(
+        30,
+        (i) => DateTime.utc(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            ).subtract(Duration(days: i)));
+    print(dateHistory);
   }
 
   Widget _emptyWidget() {
@@ -210,19 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             )
           ],
-        )
-        //  ListTile(
-        //     tileColor: Colors.grey,
-        //     leading: Icon(
-        //       icon,
-        //       size: 30,
-        //       color: Colors.grey,
-        //     ),
-        //     title: Text(
-        //       value,
-        //       style: const TextStyle(color: Colors.red),
-        //     )),
-        );
+        ));
   }
 
   Future showBottomSheet(InfoModel user) {
@@ -511,6 +509,41 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         body: <Widget>[
+          SizedBox(
+            height: 70,
+            width: double.infinity,
+            child: ListView(
+                scrollDirection: Axis.horizontal,
+                shrinkWrap: true,
+                children: List.generate(
+                    dateHistory.length,
+                    (index) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: Colors.black38.withOpacity(0.3),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(10))),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${DateTime.parse("2021-12-23 11:47:00").day}',
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            const Text(
+                              "Mon",
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500),
+                            )
+                          ],
+                        ))).toList()),
+          ),
           data.isEmpty
               ? _emptyWidget()
               : GridView.count(
