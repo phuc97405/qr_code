@@ -12,7 +12,6 @@ import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:intl/intl_browser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
