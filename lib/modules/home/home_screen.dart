@@ -13,6 +13,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
+enum WeekdayE { Mon, Tue, Wed, Thu, Fri, Sa, Su }
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -70,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadFileCsv();
+    print(WeekdayE.values[1].name);
     dateHistory = List<DateTime>.generate(
         30,
         (i) => DateTime.utc(
@@ -509,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         body: <Widget>[
           SizedBox(
-            height: 70,
+            height: 65,
             width: double.infinity,
             child: ListView(
                 scrollDirection: Axis.horizontal,
@@ -517,25 +520,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: List.generate(
                     dateHistory.length,
                     (index) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 15, vertical: 5),
+                        width: 60,
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 5),
                         decoration: BoxDecoration(
                             color: Colors.black38.withOpacity(0.3),
                             borderRadius:
                                 const BorderRadius.all(Radius.circular(10))),
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '${DateTime.parse("2021-12-23 11:47:00").day}',
+                              '${DateTime.parse(dateHistory[index].toString()).day}',
                               style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500),
                             ),
-                            const Text(
-                              "Mon",
-                              style: TextStyle(
+                            Text(
+                              WeekdayE
+                                  .values[DateTime.parse(
+                                              dateHistory[index].toString())
+                                          .weekday -
+                                      1]
+                                  .name,
+                              style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500),
