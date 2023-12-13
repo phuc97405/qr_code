@@ -1,3 +1,5 @@
+// ignore_for_file: unrelated_type_equality_checks
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,6 +10,7 @@ import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/base_widgets.dart';
 import 'package:my_room/extensions/context_extensions.dart';
+import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,21 +27,35 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<InfoModel> data = [];
+  int currentPageIndex = 0;
+
   List<DateTime> dateHistory = [];
+  late int indexFilterDate = 0;
+  final _scrollController = ScrollController();
 
   Future<void> _scanQRNormal() async {
     String barcodeScanRes;
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
-      // ignore: unrelated_type_equality_checks
       if (!mounted || barcodeScanRes == -1) return;
-      setState(() {
-        final mapList = barcodeScanRes.split('|').toList();
-        if (mapList.length != 7) return;
-        var indexExist = data.indexWhere((element) =>
-            element.cccd == '${mapList[0]}/${mapList[1]}' && element.isCheckIn);
-        if (indexExist == -1) {
+      final mapList = barcodeScanRes.split('|').toList();
+      if (mapList.length != 7) return;
+      var indexExist = data.indexWhere((element) =>
+          element.cccd == '${mapList[0]}/${mapList[1]}' &&
+          element.isCheckIn &&
+          DateTime.now().isSameDate(
+              DateTime.now(),
+              DateTime.fromMillisecondsSinceEpoch(
+                  int.parse(element.createAdd))));
+      if (indexExist != -1) {
+        setState(() {
+          data[indexExist].isCheckIn = !data[indexExist].isCheckIn;
+          data[indexExist].updateAt =
+              DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
+        });
+      } else {
+        setState(() {
           data.insert(
               0,
               InfoModel(
@@ -50,17 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   gender: mapList[4],
                   address: mapList[5],
                   createdDate: mapList[6],
-                  createAdd:
-                      DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
+                  createAdd: DateTime.now().millisecondsSinceEpoch.toString(),
+                  // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
                   updateAt: ''));
-        } else {
-          data[indexExist].isCheckIn = !data[indexExist].isCheckIn;
-          data[indexExist].updateAt =
-              DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
-        }
-        _writeCsvFile();
-        showSnackbar('Saving...');
-      });
+        });
+      }
+      _writeCsvFile();
+      showSnackbar('Saving...');
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
     } catch (e) {
@@ -68,11 +81,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void loadMoreWhenScrollFilter() {
+    final List<DateTime> dateNew = List<DateTime>.generate(
+        31,
+        (i) => DateTime.utc(
+              dateHistory.last.year,
+              dateHistory.last.month,
+              dateHistory.last.day,
+            ).subtract(Duration(days: i + 1)));
+    setState(() {
+      dateHistory.addAll(dateNew);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _loadFileCsv();
-    print(WeekdayE.values[1].name);
     dateHistory = List<DateTime>.generate(
         30,
         (i) => DateTime.utc(
@@ -80,7 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
               DateTime.now().month,
               DateTime.now().day,
             ).subtract(Duration(days: i)));
-    print(dateHistory);
+    print(DateTime.now()
+        .isSameDate(DateTime.now(), dateHistory[indexFilterDate]));
   }
 
   Widget _emptyWidget() {
@@ -95,9 +121,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _loadFileCsv() async {
-    final directory =
-        await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-    final path = '${directory.path}/users.csv';
+    final directory = await getExternalStorageDirectory();
+    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
+    final path = '${directory?.path}/users.csv';
     List<InfoModel> usersMap = [];
     final checkPathExistence = await Directory(path).exists();
     if (!checkPathExistence) return;
@@ -106,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .transform(utf8.decoder)
         .transform(const CsvToListConverter())
         .toList();
-    mapList.removeAt(0);
+    mapList.removeAt(0); //remove row properties key
     if (mapList.isNotEmpty) {
       mapList.forEach((element) {
         usersMap.add(InfoModel(
@@ -136,9 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _shareFile() async {
-    final directory =
-        await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-    final path = '${directory.path}/users.csv';
+    final directory = await getExternalStorageDirectory();
+    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
+    final path = '${directory?.path}/users.csv';
     if (path.isEmpty) return;
 
     final files = <XFile>[];
@@ -292,7 +318,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(
                         height: 5,
                       ),
-                      BaseWidgets.instance.rowInfo('CheckIn: ', user.createAdd),
+                      BaseWidgets.instance.rowInfo('CheckIn: ',
+                          DateTime.now().toDateFormat(user.createAdd)),
+                      // DateFormat('hh:mm dd/MM/yyyy').format(
+                      //     DateTime.fromMillisecondsSinceEpoch(
+                      //         int.parse(user.createAdd)))
+                      // ),
                       const SizedBox(
                         height: 5,
                       ),
@@ -357,11 +388,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(
                           height: 5,
                         ),
-                        Text(info[index].createAdd,
+                        Text(DateTime.now().toDateFormat(info[index].createAdd),
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w300)),
+                        const SizedBox(
+                          height: 5,
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.edit_calendar_outlined,
+                              size: 20,
+                              color: Colors.black,
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Icon(
+                              Icons.delete,
+                              size: 20,
+                              color: Colors.red,
+                            )
+                          ],
+                        )
                       ]),
                 ),
                 Positioned(
@@ -392,6 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
       Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,
       ].request();
+      print(statuses);
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");
@@ -420,10 +473,12 @@ class _HomeScreenState extends State<HomeScreen> {
         rows.add(row);
       }
       String csv = const ListToCsvConverter().convert(rows);
-      final directory =
-          await getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-      final path = '${directory.path}/users.csv';
+      final directory = await getExternalStorageDirectory();
+      print(directory);
+      // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/files
+      final path = '${directory?.path}/users.csv';
       File f = await File(path).create(recursive: true);
+      f.copy("/storage/emulated/0/Download");
       await f.writeAsString(csv);
     } on PlatformException catch (ex) {
       print(ex);
@@ -432,14 +487,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  int currentPageIndex = 0;
+  void handleFilter(int index) {
+    setState(() {
+      indexFilterDate = index;
+    });
+    print(index);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          backgroundColor: Colors.green[300],
+          backgroundColor: Colors.black,
           leading: GestureDetector(
               onTap: () {
                 if (data.isNotEmpty) {
@@ -448,119 +508,165 @@ class _HomeScreenState extends State<HomeScreen> {
                   showSnackbar('User export is empty!');
                 }
               },
-              child: Icon(
+              child: const Icon(
                 Icons.share,
-                color: data.isNotEmpty ? Colors.black : Colors.black54,
+                color: Colors.white,
                 size: 30,
               )),
           leadingWidth: 50,
-          // actions: [
-          //   Padding(
-          //     padding: const EdgeInsets.only(right: 10),
-          //     child: GestureDetector(
-          //         onTap: () {
-          //           if (!isSave) {
-          //             _writeCsvFile();
-          //             setState(() {
-          //               isSave = true;
-          //             });
-          //             showSnackbar('Saving...');
-          //           } else {
-          //             showSnackbar('Please Add User With QR Code !!!');
-          //           }
-          //         },
-          //         child: Icon(
-          //           Icons.save,
-          //           color: isSave ? Colors.black54 : Colors.black,
-          //           size: 30,
-          //         )),
-          //   ),
-          // ],
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: GestureDetector(
+                  onTap: () {},
+                  child: const Icon(
+                    Icons.search,
+                    color: Colors.white,
+                    size: 30,
+                  )),
+            ),
+          ],
           title: const Text(
             "My Room",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
           ),
         ),
         floatingActionButton: FloatingActionButton(
           tooltip: 'scan', // used by assistive technologies
           onPressed: _scanQRNormal,
-          backgroundColor: Colors.green[100],
+          backgroundColor: Colors.white,
           child: const Icon(
             Icons.qr_code,
-            color: Colors.green,
+            color: Colors.black,
           ),
         ),
-        bottomNavigationBar: NavigationBar(
-          onDestinationSelected: (int index) {
-            setState(() {
-              currentPageIndex = index;
-            });
-          },
-          indicatorColor: Colors.green,
-          selectedIndex: currentPageIndex,
-          destinations: const [
-            NavigationDestination(
-              selectedIcon: Icon(Icons.home),
-              icon: Icon(Icons.home_outlined),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
               label: 'Home',
             ),
-            NavigationDestination(
-              icon: Badge(child: Icon(Icons.settings_outlined)),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
               label: 'Settings',
-            ),
+            )
           ],
+          currentIndex: currentPageIndex,
+          selectedItemColor: Colors.black,
+          onTap: (int index) {
+            switch (index) {
+              case 0:
+                if (currentPageIndex == index) {}
+              case 1:
+            }
+            setState(
+              () {
+                currentPageIndex = index;
+              },
+            );
+          },
         ),
+        backgroundColor: Colors.black,
         body: <Widget>[
-          SizedBox(
-            height: 65,
-            width: double.infinity,
-            child: ListView(
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                children: List.generate(
-                    dateHistory.length,
-                    (index) => Container(
-                        width: 60,
-                        margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        decoration: BoxDecoration(
-                            color: Colors.black38.withOpacity(0.3),
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(10))),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '${DateTime.parse(dateHistory[index].toString()).day}',
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                            Text(
-                              WeekdayE
-                                  .values[DateTime.parse(
-                                              dateHistory[index].toString())
-                                          .weekday -
-                                      1]
-                                  .name,
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500),
-                            )
-                          ],
-                        ))).toList()),
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 65,
+                  width: double.infinity,
+                  child: NotificationListener(
+                    onNotification: (notification) {
+                      print('notification$notification');
+                      if (notification is ScrollEndNotification) {
+                        loadMoreWhenScrollFilter();
+                      }
+                      return true;
+                    },
+                    child: ListView(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        shrinkWrap: true,
+                        itemExtent: 70,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        reverse: true,
+                        children: List.generate(
+                            dateHistory.length,
+                            (index) => GestureDetector(
+                                  onTap: () => handleFilter(index),
+                                  child: Container(
+                                      margin: const EdgeInsets.only(right: 10),
+                                      decoration: BoxDecoration(
+                                          color: index == indexFilterDate
+                                              ? Colors.green
+                                              : Colors.grey.withOpacity(0.3),
+                                          borderRadius: const BorderRadius.all(
+                                              Radius.circular(10))),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            '${DateTime.parse(dateHistory[index].toString()).day}',
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                          Text(
+                                            WeekdayE
+                                                .values[DateTime.parse(
+                                                            dateHistory[index]
+                                                                .toString())
+                                                        .weekday -
+                                                    1]
+                                                .name,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500),
+                                          )
+                                        ],
+                                      )),
+                                )).toList()),
+                  ),
+                ),
+                Flexible(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 20),
+                    decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(15),
+                            topRight: Radius.circular(15))),
+                    child:
+                        // DateTime.now().isSameDate(one, two)
+                        data
+                                .where((element) => DateTime.now().isSameDate(
+                                    DateTime.fromMillisecondsSinceEpoch(
+                                        int.parse(element.createAdd)),
+                                    dateHistory[indexFilterDate]))
+                                .isEmpty
+                            ? _emptyWidget()
+                            : GridView.count(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 10),
+                                crossAxisSpacing: 5,
+                                mainAxisSpacing: 5,
+                                crossAxisCount: 2,
+                                children: _infoUser(data
+                                    .where((element) => DateTime.now()
+                                        .isSameDate(
+                                            DateTime.fromMillisecondsSinceEpoch(
+                                                int.parse(element.createAdd)),
+                                            dateHistory[indexFilterDate]))
+                                    .toList())),
+                  ),
+                ),
+              ],
+            ),
           ),
-          data.isEmpty
-              ? _emptyWidget()
-              : GridView.count(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(5),
-                  crossAxisSpacing: 5,
-                  mainAxisSpacing: 5,
-                  crossAxisCount: 2,
-                  children: _infoUser(data)),
           const Text('Settings')
         ][currentPageIndex]);
   }
