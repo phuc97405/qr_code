@@ -163,10 +163,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _shareFile() async {
     final directory = await getExternalStorageDirectory();
+
     // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path = '${directory?.path}/users.csv';
     if (path.isEmpty) return;
-
+    File f = await File(path).create(recursive: true);
+    await f.copy(
+        "/storage/emulated/0/Download/data_scan_${DateFormat('kk_mm_dd_MM_yyyy').format(DateTime.now())}.csv");
     final files = <XFile>[];
     files.add(XFile(path, name: 'My Users File'));
     Share.shareXFiles(files, text: 'My Users File');
@@ -478,7 +481,6 @@ class _HomeScreenState extends State<HomeScreen> {
       // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/files
       final path = '${directory?.path}/users.csv';
       File f = await File(path).create(recursive: true);
-      f.copy("/storage/emulated/0/Download");
       await f.writeAsString(csv);
     } on PlatformException catch (ex) {
       print(ex);
@@ -501,7 +503,7 @@ class _HomeScreenState extends State<HomeScreen> {
           centerTitle: true,
           backgroundColor: Colors.black,
           leading: GestureDetector(
-              onTap: () {
+              onTap: () async {
                 if (data.isNotEmpty) {
                   _shareFile();
                 } else {
