@@ -1,5 +1,3 @@
-// ignore_for_file: unrelated_type_equality_checks
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,14 +7,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/base_widgets.dart';
+import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/extensions/context_extensions.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
-
-enum WeekdayE { Mon, Tue, Wed, Thu, Fri, Sa, Su }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,7 +24,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<InfoModel> data = [];
-  int currentPageIndex = 0;
 
   List<DateTime> dateHistory = [];
   late int indexFilterDate = 0;
@@ -477,7 +473,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       String csv = const ListToCsvConverter().convert(rows);
       final directory = await getExternalStorageDirectory();
-      print(directory);
       // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/files
       final path = '${directory?.path}/users.csv';
       File f = await File(path).create(recursive: true);
@@ -499,177 +494,147 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          backgroundColor: Colors.black,
-          leading: GestureDetector(
-              onTap: () async {
-                if (data.isNotEmpty) {
-                  _shareFile();
-                } else {
-                  showSnackbar('User export is empty!');
-                }
-              },
-              child: const Icon(
-                Icons.share,
-                color: Colors.white,
-                size: 30,
-              )),
-          leadingWidth: 50,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: GestureDetector(
-                  onTap: () {},
-                  child: const Icon(
-                    Icons.search,
-                    color: Colors.white,
-                    size: 30,
-                  )),
-            ),
-          ],
-          title: const Text(
-            "My Room",
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
-          ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          tooltip: 'scan', // used by assistive technologies
-          onPressed: _scanQRNormal,
-          backgroundColor: Colors.white,
-          child: const Icon(
-            Icons.qr_code,
-            color: Colors.black,
-          ),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
-            )
-          ],
-          currentIndex: currentPageIndex,
-          selectedItemColor: Colors.black,
-          onTap: (int index) {
-            switch (index) {
-              case 0:
-                if (currentPageIndex == index) {}
-              case 1:
-            }
-            setState(
-              () {
-                currentPageIndex = index;
-              },
-            );
-          },
-        ),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Colors.black,
-        body: <Widget>[
+        leading: GestureDetector(
+            onTap: () async {
+              if (data.isNotEmpty) {
+                _shareFile();
+              } else {
+                showSnackbar('User export is empty!');
+              }
+            },
+            child: const Icon(
+              Icons.share,
+              color: Colors.white,
+              size: 30,
+            )),
+        leadingWidth: 50,
+        actions: [
           Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 65,
-                  width: double.infinity,
-                  child: NotificationListener(
-                    onNotification: (notification) {
-                      print('notification$notification');
-                      if (notification is ScrollEndNotification) {
-                        loadMoreWhenScrollFilter();
-                      }
-                      return true;
-                    },
-                    child: ListView(
-                        controller: _scrollController,
-                        scrollDirection: Axis.horizontal,
-                        shrinkWrap: true,
-                        itemExtent: 70,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        reverse: true,
-                        children: List.generate(
-                            dateHistory.length,
-                            (index) => GestureDetector(
-                                  onTap: () => handleFilter(index),
-                                  child: Container(
-                                      margin: const EdgeInsets.only(right: 10),
-                                      decoration: BoxDecoration(
-                                          color: index == indexFilterDate
-                                              ? Colors.green
-                                              : Colors.grey.withOpacity(0.3),
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(10))),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            '${DateTime.parse(dateHistory[index].toString()).day}',
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.w500),
-                                          ),
-                                          Text(
-                                            WeekdayE
-                                                .values[DateTime.parse(
-                                                            dateHistory[index]
-                                                                .toString())
-                                                        .weekday -
-                                                    1]
-                                                .name,
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w500),
-                                          )
-                                        ],
-                                      )),
-                                )).toList()),
-                  ),
-                ),
-                Flexible(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(15),
-                            topRight: Radius.circular(15))),
-                    child:
-                        // DateTime.now().isSameDate(one, two)
-                        data
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+                onTap: () {},
+                child: const Icon(
+                  Icons.search,
+                  color: Colors.white,
+                  size: 30,
+                )),
+          ),
+        ],
+        title: const Text(
+          "My Room",
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'scan', // used by assistive technologies
+        onPressed: _scanQRNormal,
+        backgroundColor: Colors.white,
+        child: const Icon(
+          Icons.qr_code,
+          color: Colors.black,
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 65,
+              width: double.infinity,
+              child: NotificationListener(
+                onNotification: (notification) {
+                  print('notification$notification');
+                  if (notification is ScrollEndNotification) {
+                    loadMoreWhenScrollFilter();
+                  }
+                  return true;
+                },
+                child: ListView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                    itemExtent: 70,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    reverse: true,
+                    children: List.generate(
+                        dateHistory.length,
+                        (index) => GestureDetector(
+                              onTap: () => handleFilter(index),
+                              child: Container(
+                                  margin: const EdgeInsets.only(right: 10),
+                                  decoration: BoxDecoration(
+                                      color: index == indexFilterDate
+                                          ? Colors.green
+                                          : Colors.grey.withOpacity(0.3),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(10))),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${DateTime.parse(dateHistory[index].toString()).day}',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                      Text(
+                                        WeekdayE
+                                            .values[DateTime.parse(
+                                                        dateHistory[index]
+                                                            .toString())
+                                                    .weekday -
+                                                1]
+                                            .name,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500),
+                                      )
+                                    ],
+                                  )),
+                            )).toList()),
+              ),
+            ),
+            Flexible(
+              child: Container(
+                margin: const EdgeInsets.only(top: 20),
+                decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(15),
+                        topRight: Radius.circular(15))),
+                child:
+                    // DateTime.now().isSameDate(one, two)
+                    data
+                            .where((element) => DateTime.now().isSameDate(
+                                DateTime.fromMillisecondsSinceEpoch(
+                                    int.parse(element.createAdd)),
+                                dateHistory[indexFilterDate]))
+                            .isEmpty
+                        ? _emptyWidget()
+                        : GridView.count(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 10),
+                            crossAxisSpacing: 5,
+                            mainAxisSpacing: 5,
+                            crossAxisCount: 2,
+                            children: _infoUser(data
                                 .where((element) => DateTime.now().isSameDate(
                                     DateTime.fromMillisecondsSinceEpoch(
                                         int.parse(element.createAdd)),
                                     dateHistory[indexFilterDate]))
-                                .isEmpty
-                            ? _emptyWidget()
-                            : GridView.count(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 10),
-                                crossAxisSpacing: 5,
-                                mainAxisSpacing: 5,
-                                crossAxisCount: 2,
-                                children: _infoUser(data
-                                    .where((element) => DateTime.now()
-                                        .isSameDate(
-                                            DateTime.fromMillisecondsSinceEpoch(
-                                                int.parse(element.createAdd)),
-                                            dateHistory[indexFilterDate]))
-                                    .toList())),
-                  ),
-                ),
-              ],
+                                .toList())),
+              ),
             ),
-          ),
-          const Text('Settings')
-        ][currentPageIndex]);
+          ],
+        ),
+      ),
+    );
   }
 }
