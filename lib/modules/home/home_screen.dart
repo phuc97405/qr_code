@@ -7,16 +7,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/base_widgets.dart';
+import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/extensions/context_extensions.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function openDrawer;
+  const HomeScreen({super.key, required this.openDrawer});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -69,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
       _writeCsvFile();
-      showSnackbar('Saving...');
+      ShowSnackBar().showSnackbar(context, 'Saving...');
     } on PlatformException {
       barcodeScanRes = "Failed to get platform version.";
     } catch (e) {
@@ -147,28 +148,6 @@ class _HomeScreenState extends State<HomeScreen> {
         data.insertAll(0, usersMap);
       });
     }
-  }
-
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showSnackbar(
-      String text) {
-    return ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(text),
-      duration: const Duration(seconds: 2),
-    ));
-  }
-
-  void _shareFile() async {
-    final directory = await getExternalStorageDirectory();
-
-    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-    final path = '${directory?.path}/users.csv';
-    if (path.isEmpty) return;
-    File f = await File(path).create(recursive: true);
-    await f.copy(
-        "/storage/emulated/0/Download/data_scan_${DateFormat('kk_mm_dd_MM_yyyy').format(DateTime.now())}.csv");
-    final files = <XFile>[];
-    files.add(XFile(path, name: 'My Users File'));
-    Share.shareXFiles(files, text: 'My Users File');
   }
 
   Future<void> _dialogDelete(BuildContext context, int index) {
@@ -397,6 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Icon(
                               Icons.edit_calendar_outlined,
@@ -443,7 +423,6 @@ class _HomeScreenState extends State<HomeScreen> {
       Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,
       ].request();
-      print(statuses);
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");
@@ -488,7 +467,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       indexFilterDate = index;
     });
-    print(index);
   }
 
   @override
@@ -499,15 +477,9 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         backgroundColor: Colors.black,
         leading: GestureDetector(
-            onTap: () async {
-              if (data.isNotEmpty) {
-                _shareFile();
-              } else {
-                showSnackbar('User export is empty!');
-              }
-            },
+            onTap: () => widget.openDrawer(),
             child: const Icon(
-              Icons.share,
+              Icons.menu,
               color: Colors.white,
               size: 30,
             )),
