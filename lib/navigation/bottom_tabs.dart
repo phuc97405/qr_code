@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/modules/home/home_screen.dart';
-import 'package:my_room/modules/setting/setting_screen.dart';
+import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -98,7 +98,7 @@ class _BottomTabsState extends State<BottomTabs> {
               const Divider(),
               ListTile(
                   title: const Text("Share Files"),
-                  trailing: const Icon(Icons.save),
+                  trailing: const Icon(Icons.share),
                   onTap: () {
                     scaffoldKey.currentState?.closeDrawer();
                     _shareFile();
@@ -147,9 +147,18 @@ class _BottomTabsState extends State<BottomTabs> {
             );
           },
         ),
-        body: <Widget>[
-          HomeScreen(openDrawer: openDrawer),
-          const SettingScreen()
-        ][currentPageIndex]);
+        body: IndexedStack(
+          index: currentPageIndex,
+          children: [
+            HomeScreen(openDrawer: openDrawer),
+            SettingScreen(openDrawer: openDrawer)
+          ],
+        )
+
+        // <Widget>[
+        //   HomeScreen(openDrawer: openDrawer),
+        //   SettingScreen(openDrawer: openDrawer)
+        // ][currentPageIndex]
+        );
   }
 }

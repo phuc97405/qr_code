@@ -6,9 +6,10 @@ class InfoModel {
   String gender;
   String address;
   String createdDate;
-  String createAdd;
+  String createAt;
   bool isCheckIn;
   String updateAt;
+  String room;
   InfoModel(
       {required this.isCheckIn,
       required this.id,
@@ -17,7 +18,8 @@ class InfoModel {
       required this.birthDay,
       required this.address,
       required this.createdDate,
-      required this.createAdd,
+      required this.createAt,
       required this.gender,
-      required this.updateAt});
+      required this.updateAt,
+      required this.room});
 }

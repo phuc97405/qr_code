@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/base_widgets.dart';
+import 'package:my_room/components/dropdown.dart';
 import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/extensions/context_extensions.dart';
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
+      // ignore: unrelated_type_equality_checks
       if (!mounted || barcodeScanRes == -1) return;
       final mapList = barcodeScanRes.split('|').toList();
       if (mapList.length != 7) return;
@@ -44,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
           DateTime.now().isSameDate(
               DateTime.now(),
               DateTime.fromMillisecondsSinceEpoch(
-                  int.parse(element.createAdd))));
+                  int.parse(element.createAt))));
       if (indexExist != -1) {
         setState(() {
           data[indexExist].isCheckIn = !data[indexExist].isCheckIn;
@@ -64,9 +66,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   gender: mapList[4],
                   address: mapList[5],
                   createdDate: mapList[6],
-                  createAdd: DateTime.now().millisecondsSinceEpoch.toString(),
+                  createAt: DateTime.now().millisecondsSinceEpoch.toString(),
                   // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
-                  updateAt: ''));
+                  updateAt: '',
+                  room: ''));
         });
       }
       _writeCsvFile();
@@ -94,6 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    print('init state home');
+
     _loadFileCsv();
     dateHistory = List<DateTime>.generate(
         30,
@@ -133,16 +138,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mapList.isNotEmpty) {
       mapList.forEach((element) {
         usersMap.add(InfoModel(
-            id: '${element[0]}',
-            cccd: '${element[1]}',
-            name: '${element[2]}',
-            birthDay: '${element[3]}',
-            gender: '${element[4]}',
-            address: '${element[5]}',
-            createdDate: '${element[6]}',
-            createAdd: '${element[7]}',
-            isCheckIn: element[8],
-            updateAt: '${element[9]}'));
+          id: '${element[0]}',
+          cccd: '${element[1]}',
+          name: '${element[2]}',
+          birthDay: '${element[3]}',
+          gender: '${element[4]}',
+          address: '${element[5]}',
+          createdDate: '${element[6]}',
+          createAt: '${element[7]}',
+          isCheckIn: element[8],
+          updateAt: '${element[9]}',
+          room: element[10],
+        ));
       });
       setState(() {
         data.insertAll(0, usersMap);
@@ -248,8 +255,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      viewButton(Icons.timelapse_sharp, '2H', 'Timer'),
-                      viewButton(Icons.numbers, '202', 'Room'),
+                      viewButton(
+                          Icons.timelapse_sharp,
+                          '${(DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(int.parse(user.createAt)).subtract(Duration(hours: 20))).inMinutes / 60).toStringAsFixed(1)}H',
+                          'Timer'),
+                      viewButton(Icons.numbers,
+                          user.room.isEmpty ? '---' : user.room, 'Room'),
                       viewButton(Icons.star_outline_sharp,
                           user.updateAt.isEmpty ? 'In' : 'Out', 'Status'),
                     ],
@@ -297,10 +308,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 5,
                       ),
                       BaseWidgets.instance.rowInfo('CheckIn: ',
-                          DateTime.now().toDateFormat(user.createAdd)),
+                          DateTime.now().toDateFormat(user.createAt)),
                       // DateFormat('hh:mm dd/MM/yyyy').format(
                       //     DateTime.fromMillisecondsSinceEpoch(
-                      //         int.parse(user.createAdd)))
+                      //         int.parse(user.createAt)))
                       // ),
                       const SizedBox(
                         height: 5,
@@ -324,15 +335,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return List.generate(
         info.length,
         (index) => GestureDetector(
-              onLongPress: () {
-                _dialogDelete(context, index);
-              },
+              onLongPress: () => _dialogDelete(context, index),
               onTap: () {
                 showBottomSheet(info[index]);
               },
               child: Stack(children: [
                 Container(
-                  padding: const EdgeInsets.fromLTRB(5, 40, 5, 5),
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                    top: 35,
+                    right: 10,
+                  ),
                   decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
                       color: info[index].isCheckIn
@@ -343,58 +356,59 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: (info[index].isCheckIn
                               ? Colors.green
                               : Colors.red))),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        BaseWidgets.instance
-                            .rowInfo('Name: ', info[index].name),
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        BaseWidgets.instance
-                            .rowInfo('Gender: ', info[index].gender),
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        BaseWidgets.instance.rowInfo(
-                          'Birth: ',
-                          info[index]
-                              .birthDay
-                              .replaceRange(2, 2, '-')
-                              .replaceRange(5, 5, '-'),
-                        ),
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        Text(DateTime.now().toDateFormat(info[index].createAdd),
-                            style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w300)),
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Icon(
-                              Icons.edit_calendar_outlined,
-                              size: 20,
-                              color: Colors.black,
-                            ),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            Icon(
-                              Icons.delete,
-                              size: 20,
-                              color: Colors.red,
-                            )
-                          ],
-                        )
-                      ]),
+                  child: Column(children: [
+                    BaseWidgets.instance.rowInfo('Name: ', info[index].name),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    BaseWidgets.instance
+                        .rowInfo('Gender: ', info[index].gender),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    BaseWidgets.instance.rowInfo(
+                      'Birth: ',
+                      info[index]
+                          .birthDay
+                          .replaceRange(2, 2, '-')
+                          .replaceRange(5, 5, '-'),
+                    ),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    BaseWidgets.instance.rowInfo(
+                      'Room: ',
+                      info[index].room.isEmpty ? '---' : info[index].room,
+                    ),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    Text(DateTime.now().toDateFormat(info[index].createAt),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w300)),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                  ]),
                 ),
+                Positioned(
+                    right: 8,
+                    bottom: 0,
+                    child: DropdownButton<String>(
+                      icon: const Icon(Icons.edit_calendar),
+                      underline: const SizedBox(),
+                      items: <String>['A', 'B', 'C', 'D'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (_) {
+                        print(_);
+                      },
+                    )),
                 Positioned(
                     right: 8,
                     top: 8,
@@ -432,9 +446,10 @@ class _HomeScreenState extends State<HomeScreen> {
       row.add("gender");
       row.add("address");
       row.add("createdDate");
-      row.add("createAdd");
+      row.add("createAt");
       row.add("isCheckIn");
       row.add("updateAt");
+      row.add("room");
       rows.add(row);
       for (int i = 0; i < data.length; i++) {
         List<dynamic> row = [];
@@ -445,9 +460,10 @@ class _HomeScreenState extends State<HomeScreen> {
         row.add(data[i].gender);
         row.add(data[i].address);
         row.add(data[i].createdDate);
-        row.add(data[i].createAdd);
+        row.add(data[i].createAt);
         row.add(data[i].isCheckIn);
         row.add(data[i].updateAt);
+        row.add(data[i].room);
         rows.add(row);
       }
       String csv = const ListToCsvConverter().convert(rows);
@@ -503,6 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'scanQr',
         tooltip: 'scan', // used by assistive technologies
         onPressed: _scanQRNormal,
         backgroundColor: Colors.white,
@@ -520,7 +537,6 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               child: NotificationListener(
                 onNotification: (notification) {
-                  print('notification$notification');
                   if (notification is ScrollEndNotification) {
                     loadMoreWhenScrollFilter();
                   }
@@ -586,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     data
                             .where((element) => DateTime.now().isSameDate(
                                 DateTime.fromMillisecondsSinceEpoch(
-                                    int.parse(element.createAdd)),
+                                    int.parse(element.createAt)),
                                 dateHistory[indexFilterDate]))
                             .isEmpty
                         ? _emptyWidget()
@@ -599,7 +615,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: _infoUser(data
                                 .where((element) => DateTime.now().isSameDate(
                                     DateTime.fromMillisecondsSinceEpoch(
-                                        int.parse(element.createAdd)),
+                                        int.parse(element.createAt)),
                                     dateHistory[indexFilterDate]))
                                 .toList())),
               ),
