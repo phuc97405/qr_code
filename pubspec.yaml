@@ -41,6 +41,11 @@ dependencies:
   share_plus: ^7.2.1
   dio: ^5.4.0
   intl: ^0.19.0
+  flutter_bloc: ^8.1.3
+
+  equatable:
+
+  responsive_sizer: ^3.2.0
 
 dev_dependencies:
   flutter_test:

@@ -294,7 +294,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             .replaceRange(2, 2, '-')
                             .replaceRange(5, 5, '-'),
                       ),
-
                       BaseWidgets.instance.rowInfo(
                           'Data Range: ',
                           user.createdDate
