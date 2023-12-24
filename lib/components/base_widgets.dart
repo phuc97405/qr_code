@@ -15,7 +15,7 @@ class BaseWidgets {
           flex: 2,
           child: Text(type,
               style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   color: Colors.black38,
                   fontWeight: FontWeight.w300))),
       Expanded(
@@ -24,7 +24,7 @@ class BaseWidgets {
             style: const TextStyle(
                 color: Colors.black,
                 fontSize: 15,
-                fontWeight: FontWeight.w500)),
+                fontWeight: FontWeight.bold)),
       )
     ]);
   }

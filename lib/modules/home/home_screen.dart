@@ -5,14 +5,15 @@ import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/base_widgets.dart';
-import 'package:my_room/components/dropdown.dart';
 import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/extensions/context_extensions.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
+import 'package:my_room/modules/home/bloc/home_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -97,9 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    print('init state home');
-
-    _loadFileCsv();
+    context.read<HomeBloc>().add(HomeLoadData());
+    // print('init state home');
+    // print(context.read<HomeBloc>().state.dateHistory);
+    // _loadFileCsv();
     dateHistory = List<DateTime>.generate(
         30,
         (i) => DateTime.utc(
@@ -124,10 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadFileCsv() async {
     final directory = await getExternalStorageDirectory();
-    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path = '${directory?.path}/users.csv';
     List<InfoModel> usersMap = [];
-    final checkPathExistence = await Directory(path).exists();
+    // final checkPathExistence = await Directory(directory!.path).exists();
+    final checkPathExistence = await File(path).exists();
+
     if (!checkPathExistence) return;
     final input = File(path).openRead();
     List mapList = await input
@@ -146,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
           address: '${element[5]}',
           createdDate: '${element[6]}',
           createAt: '${element[7]}',
-          isCheckIn: element[8],
+          isCheckIn: bool.parse('${element[8]}'),
           updateAt: '${element[9]}',
           room: element[10],
         ));
@@ -340,11 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: Stack(children: [
                 Container(
-                  padding: const EdgeInsets.only(
-                    left: 10,
-                    top: 35,
-                    right: 10,
-                  ),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
                       color: info[index].isCheckIn
@@ -356,6 +355,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? Colors.green
                               : Colors.red))),
                   child: Column(children: [
+                    BaseWidgets.instance.rowInfo(
+                      'Room: ',
+                      info[index].room.isEmpty ? '---' : info[index].room,
+                    ),
+                    const SizedBox(
+                      height: 5,
+                    ),
                     BaseWidgets.instance.rowInfo('Name: ', info[index].name),
                     const SizedBox(
                       height: 5,
@@ -375,13 +381,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(
                       height: 5,
                     ),
-                    BaseWidgets.instance.rowInfo(
-                      'Room: ',
-                      info[index].room.isEmpty ? '---' : info[index].room,
-                    ),
-                    const SizedBox(
-                      height: 5,
-                    ),
                     Text(DateTime.now().toDateFormat(info[index].createAt),
                         style: const TextStyle(
                             fontSize: 12,
@@ -396,7 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     right: 8,
                     bottom: 0,
                     child: DropdownButton<String>(
-                      icon: const Icon(Icons.edit_calendar),
+                      icon: const Icon(
+                        Icons.edit_calendar,
+                        size: 20,
+                      ),
                       underline: const SizedBox(),
                       items: <String>['A', 'B', 'C', 'D'].map((String value) {
                         return DropdownMenuItem<String>(
@@ -520,7 +522,8 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'scanQr',
         tooltip: 'scan', // used by assistive technologies
-        onPressed: _scanQRNormal,
+        onPressed: () => context.read<HomeBloc>().add(HomeScanQR()),
+        // _scanQRNormal,
         backgroundColor: Colors.white,
         child: const Icon(
           Icons.qr_code,
@@ -590,34 +593,59 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Flexible(
               child: Container(
-                margin: const EdgeInsets.only(top: 20),
-                decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15))),
-                child:
-                    // DateTime.now().isSameDate(one, two)
-                    data
-                            .where((element) => DateTime.now().isSameDate(
-                                DateTime.fromMillisecondsSinceEpoch(
-                                    int.parse(element.createAt)),
-                                dateHistory[indexFilterDate]))
-                            .isEmpty
-                        ? _emptyWidget()
-                        : GridView.count(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 10),
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
-                            crossAxisCount: 2,
-                            children: _infoUser(data
-                                .where((element) => DateTime.now().isSameDate(
-                                    DateTime.fromMillisecondsSinceEpoch(
-                                        int.parse(element.createAt)),
-                                    dateHistory[indexFilterDate]))
-                                .toList())),
-              ),
+                  margin: const EdgeInsets.only(top: 20),
+                  decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(15),
+                          topRight: Radius.circular(15))),
+                  child:
+                      // DateTime.now().isSameDate(one, two)
+                      // data
+                      //         .where((element) => DateTime.now().isSameDate(
+                      //             DateTime.fromMillisecondsSinceEpoch(
+                      //                 int.parse(element.createAt)),
+                      //             dateHistory[indexFilterDate]))
+                      //         .isEmpty
+                      //     ? _emptyWidget()
+                      //     :
+                      // BlocBuilder<HomeBloc, HomeState>(
+                      //     // buildWhen: (previous, current) =>
+                      //     //     previous.dateHistory != previous.dateHistory,
+                      //     builder: (context, state) => state.dateHistory.isEmpty
+                      //         ? _emptyWidget()
+                      //         : GridView.count(
+                      //             padding: const EdgeInsets.all(5),
+                      //             crossAxisSpacing: 5,
+                      //             mainAxisSpacing: 5,
+                      //             crossAxisCount: 2,
+                      //             children: _infoUser(state.dateHistory
+                      //                 .where((element) => DateTime.now()
+                      //                     .isSameDate(
+                      //                         DateTime.fromMillisecondsSinceEpoch(
+                      //                             int.parse(element.createAt)),
+                      //                         dateHistory[indexFilterDate]))
+                      //                 .toList()))),
+
+                      BlocConsumer<HomeBloc, HomeState>(
+                    builder: (context, state) {
+                      print('buider');
+                      return GridView.count(
+                          padding: const EdgeInsets.all(5),
+                          crossAxisSpacing: 5,
+                          mainAxisSpacing: 5,
+                          crossAxisCount: 2,
+                          children: _infoUser(state.dateHistory
+                              .where((element) => DateTime.now().isSameDate(
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                      int.parse(element.createAt)),
+                                  dateHistory[indexFilterDate]))
+                              .toList()));
+                    },
+                    listener: (BuildContext context, HomeState state) {
+                      print(state.dateHistory);
+                    },
+                  )),
             ),
           ],
         ),

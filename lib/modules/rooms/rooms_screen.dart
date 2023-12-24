@@ -38,7 +38,8 @@ class _SettingScreenState extends State<SettingScreen> {
     // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path = '${directory?.path}/rooms.csv';
     List<RoomModel> roomsMap = [];
-    final checkPathExistence = await Directory(path).exists();
+    final checkPathExistence = await File(path).exists();
+    // await Directory(directory!.path).exists();
     if (!checkPathExistence) return;
     final input = File(path).openRead();
     List mapList = await input
