@@ -19,7 +19,16 @@ class RoomAdd extends RoomEvent {
       required this.roomStatus});
 }
 
-class RoomDeleteItem extends RoomEvent {
-  int index;
-  RoomDeleteItem({required this.index});
+class RoomDelete extends RoomEvent {
+  final int index;
+  const RoomDelete({required this.index});
+}
+
+class RoomUpdate extends RoomEvent {
+  final String timer;
+  final String name;
+  final String status;
+  final String room;
+
+  const RoomUpdate(this.timer, this.name, this.status, this.room);
 }

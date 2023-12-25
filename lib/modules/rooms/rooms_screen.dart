@@ -145,7 +145,7 @@ class _RoomScreenState extends State<RoomScreen> {
               ),
               child: const Text('Delete'),
               onPressed: () {
-                context.read<RoomBloc>().add(RoomDeleteItem(index: index));
+                context.read<RoomBloc>().add(RoomDelete(index: index));
                 Navigator.of(context).pop();
               },
             ),
@@ -157,9 +157,9 @@ class _RoomScreenState extends State<RoomScreen> {
 
   Color renderColorStatus(String type) {
     switch (type) {
-      case 'CheckIn':
+      case 'In':
         return Colors.green;
-      case 'CheckOut':
+      case 'Out':
         return Colors.red;
       default:
         return Colors.black12;
@@ -212,6 +212,16 @@ class _RoomScreenState extends State<RoomScreen> {
             ]),
           ),
         ),
+        (Positioned(
+          bottom: 10,
+          right: 8,
+          child: listData[index].status == roomStatusE.Out.name
+              ? const Icon(
+                  Icons.cleaning_services_outlined,
+                  size: 20,
+                )
+              : const SizedBox(),
+        )),
         Positioned(
             right: 8,
             top: 8,
@@ -266,10 +276,6 @@ class _RoomScreenState extends State<RoomScreen> {
           ),
         ),
         body: BlocBuilder<RoomBloc, RoomState>(builder: (context, state) {
-          // if (state.errorMessage != null) {
-          //   ShowSnackBar().showSnackbar(context, state.errorMessage!);
-          // }
-
           return GridView.count(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
               crossAxisSpacing: 5,

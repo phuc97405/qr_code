@@ -18,3 +18,10 @@ class HomeRemoverItem extends HomeEvent {
 
   const HomeRemoverItem(this.indexItemRemove);
 }
+
+class HomeAddRoomToUser extends HomeEvent {
+  final String id;
+  final String room;
+
+  const HomeAddRoomToUser(this.id, this.room);
+}

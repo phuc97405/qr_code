@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
+import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -44,7 +45,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               createAt: '${element[7]}',
               isCheckIn: bool.parse('${element[8]}'),
               updateAt: '${element[9]}',
-              room: element[10],
+              room: '${element[10]}',
             ));
           });
           emit(HomeState.loadData(
@@ -52,20 +53,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           ));
         }
       } catch (e) {
-        print('error: $e');
+        print('HomeLoadData: $e');
       }
     });
 
     on<HomeRemoverItem>((event, emit) {
-      List<InfoModel> listNew = state.dateHistory.map((e) => e).toList();
-      listNew.removeAt(event.indexItemRemove);
-      _writeFileCsv();
-      emit(HomeState.loadData(listNew));
+      try {
+        List<InfoModel> listNew = state.dateHistory.map((e) => e).toList();
+        listNew.removeAt(event.indexItemRemove);
+        emit(HomeState.loadData(listNew));
+        _writeFileCsv();
+      } catch (e) {
+        print('HomeRemoverItem$e');
+      }
     });
 
     on<HomeScanQR>((event, emit) async {
       String barcodeScanRes;
-      List<InfoModel> listNew = state.dateHistory.map((e) => e).toList();
+      List<InfoModel> listNew = [...state.dateHistory];
       try {
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
@@ -108,7 +113,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         // } on PlatformException {
         //   barcodeScanRes = "Failed to get platform version.";
       } catch (e) {
-        print(e);
+        print('HomeScanQR$e');
+      }
+    });
+
+    on<HomeAddRoomToUser>((event, emit) {
+      try {
+        List<InfoModel> listNew = [...state.dateHistory];
+        print('HomeAddRoomToUser');
+        final i = listNew.indexWhere((element) => event.id == element.id);
+        print('i$i');
+        listNew[i].room = event.room;
+        _writeFileCsv();
+        emit(HomeState.loadData(listNew));
+      } catch (e) {
+        print('HomeAddRoomToUser$e');
       }
     });
   }
@@ -155,7 +174,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     } on PlatformException catch (ex) {
       print(ex);
     } catch (ex) {
-      print(ex);
+      print('_writeFileCsv$ex');
     }
   }
 }

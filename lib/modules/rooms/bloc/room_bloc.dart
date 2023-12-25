@@ -35,8 +35,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
             timer: '${element[2]}',
             room: '${element[3]}',
             name: '${element[4]}',
-            cccd: '${element[5]}',
-            people: '${element[6]}',
+            people: '${element[5]}',
           ));
         });
         emit(RoomState.loadData(roomsMap));
@@ -56,7 +55,6 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
             timer: '',
             room: event.roomCode,
             name: '',
-            cccd: '',
             people: event.roomPeople,
           ));
 
@@ -70,11 +68,26 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
       }
     });
 
-    on<RoomDeleteItem>((event, emit) {
-      List<RoomModel> listNew = state.listRoom.map((e) => e).toList();
+    on<RoomDelete>((event, emit) {
+      List<RoomModel> listNew = [...state.listRoom];
       listNew.removeAt(event.index);
-      _writeRoomFile();
       emit(RoomState.loadData(listNew));
+      _writeRoomFile();
+    });
+    on<RoomUpdate>((event, emit) {
+      try {
+        List<RoomModel> listNew = [...state.listRoom];
+
+        final checkIndex =
+            listNew.indexWhere((element) => element.room == event.room);
+        listNew[checkIndex].name = event.name;
+        listNew[checkIndex].status = event.status;
+        listNew[checkIndex].timer = event.timer;
+        emit(RoomState.loadData(listNew));
+        _writeRoomFile();
+      } catch (e) {
+        print('RoomUpdate$e');
+      }
     });
   }
 
@@ -90,7 +103,6 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
       row.add("timer");
       row.add("room");
       row.add("name");
-      row.add("cccd");
       row.add("people");
       rows.add(row);
       for (int i = 0; i < state.listRoom.length; i++) {
@@ -100,7 +112,6 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         row.add(state.listRoom[i].timer);
         row.add(state.listRoom[i].room);
         row.add(state.listRoom[i].name);
-        row.add(state.listRoom[i].cccd);
         row.add(state.listRoom[i].people);
         rows.add(row);
       }

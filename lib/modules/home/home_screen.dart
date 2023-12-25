@@ -234,47 +234,47 @@ class _HomeScreenState extends State<HomeScreen> {
         });
   }
 
-  List<Widget> _infoUser(List<InfoModel> info) {
+  List<Widget> _infoUser(List<InfoModel> users) {
     return List.generate(
-        info.length,
+        users.length,
         (index) => GestureDetector(
               onLongPress: () => _dialogDelete(context, index),
               onTap: () {
-                showBottomSheet(info[index]);
+                showBottomSheet(users[index]);
               },
               child: Stack(children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
-                      color: info[index].isCheckIn
+                      color: users[index].isCheckIn
                           ? Colors.green[100]
                           : Colors.red[100],
                       border: Border.all(
                           width: 1,
-                          color: (info[index].isCheckIn
+                          color: (users[index].isCheckIn
                               ? Colors.green
                               : Colors.red))),
                   child: Column(children: [
                     BaseWidgets.instance.rowInfo(
                       'Room: ',
-                      info[index].room.isEmpty ? '---' : info[index].room,
+                      users[index].room.isEmpty ? '---' : users[index].room,
                     ),
                     const SizedBox(
                       height: 5,
                     ),
-                    BaseWidgets.instance.rowInfo('Name: ', info[index].name),
+                    BaseWidgets.instance.rowInfo('Name: ', users[index].name),
                     const SizedBox(
                       height: 5,
                     ),
                     BaseWidgets.instance
-                        .rowInfo('Gender: ', info[index].gender),
+                        .rowInfo('Gender: ', users[index].gender),
                     const SizedBox(
                       height: 5,
                     ),
                     BaseWidgets.instance.rowInfo(
                       'Birth: ',
-                      info[index]
+                      users[index]
                           .birthDay
                           .replaceRange(2, 2, '-')
                           .replaceRange(5, 5, '-'),
@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(
                       height: 5,
                     ),
-                    Text(DateTime.now().toDateFormat(info[index].createAt),
+                    Text(DateTime.now().toDateFormat(users[index].createAt),
                         style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -297,21 +297,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     bottom: 0,
                     child: BlocBuilder<RoomBloc, RoomState>(
                       builder: (context, state) {
-                        return DropdownButton<String>(
-                            icon: const Icon(
-                              Icons.edit_calendar,
-                              size: 20,
-                            ),
-                            underline: const SizedBox(),
-                            items: state.listRoom.map((RoomModel value) {
-                              return DropdownMenuItem<String>(
-                                value: value.room,
-                                child: Text(value.room),
-                              );
-                            }).toList(),
-                            onChanged: (_) {
-                              print(_);
-                            });
+                        if (state.listRoom.isNotEmpty &&
+                            state.listRoom[index].room.isEmpty) {
+                          return DropdownButton<String>(
+                              icon: const Icon(
+                                Icons.add_home_outlined,
+                                size: 20,
+                              ),
+                              underline: const SizedBox(),
+                              items: state.listRoom.map((RoomModel value) {
+                                return DropdownMenuItem<String>(
+                                  value: value.room,
+                                  child: Text(value.room),
+                                );
+                              }).toList(),
+                              onChanged: (room) {
+                                context.read<HomeBloc>().add(
+                                    HomeAddRoomToUser(users[index].id, room!));
+                                context.read<RoomBloc>().add(RoomUpdate(
+                                    '',
+                                    users[index].name,
+                                    users[index].isCheckIn
+                                        ? roomStatusE.In.name
+                                        : roomStatusE.Out.name,
+                                    room));
+                              });
+                        } else {
+                          return const SizedBox();
+                        }
                       },
                     )),
                 Positioned(
@@ -325,11 +338,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius:
                                 BorderRadius.all(Radius.circular(12))),
                         child: Text(
-                          (info[index].isCheckIn ? 'IN' : "OUT"),
+                          (users[index].isCheckIn ? 'IN' : "OUT"),
                           style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: (info[index].isCheckIn
+                              color: (users[index].isCheckIn
                                   ? Colors.green
                                   : Colors.red)),
                         ))),
