@@ -151,14 +151,8 @@ class _BottomTabsState extends State<BottomTabs> {
           index: currentPageIndex,
           children: [
             HomeScreen(openDrawer: openDrawer),
-            SettingScreen(openDrawer: openDrawer)
+            RoomScreen(openDrawer: openDrawer)
           ],
-        )
-
-        // <Widget>[
-        //   HomeScreen(openDrawer: openDrawer),
-        //   SettingScreen(openDrawer: openDrawer)
-        // ][currentPageIndex]
-        );
+        ));
   }
 }

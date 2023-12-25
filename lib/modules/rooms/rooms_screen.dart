@@ -1,121 +1,27 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/components/base_widgets.dart';
 import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/models/room_model.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:my_room/modules/rooms/bloc/room_bloc.dart';
 
-class SettingScreen extends StatefulWidget {
-  final Function openDrawer;
-  const SettingScreen({super.key, required this.openDrawer});
+class RoomScreen extends StatefulWidget {
+  final Function? openDrawer;
+  const RoomScreen({super.key, this.openDrawer});
 
   @override
-  State<SettingScreen> createState() => _SettingScreenState();
+  State<RoomScreen> createState() => _RoomScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> {
-  TextEditingController roomController = TextEditingController();
+class _RoomScreenState extends State<RoomScreen> {
+  TextEditingController roomController = TextEditingController(text: '200');
   TextEditingController peopleController = TextEditingController(text: '2');
-
-  List<RoomModel> listRoom = [];
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    _loadFileRoom();
-    print('init state room');
-  }
-
-  void _loadFileRoom() async {
-    final directory = await getExternalStorageDirectory();
-    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
-    final path = '${directory?.path}/rooms.csv';
-    List<RoomModel> roomsMap = [];
-    final checkPathExistence = await File(path).exists();
-    // await Directory(directory!.path).exists();
-    if (!checkPathExistence) return;
-    final input = File(path).openRead();
-    List mapList = await input
-        .transform(utf8.decoder)
-        .transform(const CsvToListConverter())
-        .toList();
-    mapList.removeAt(0); //remove row properties key
-    if (mapList.isNotEmpty) {
-      mapList.forEach((element) {
-        roomsMap.add(RoomModel(
-          id: '${element[0]}',
-          status: '${element[1]}',
-          timer: '${element[2]}',
-          room: '${element[3]}',
-          name: '${element[4]}',
-          cccd: '${element[5]}',
-          people: '${element[6]}',
-        ));
-      });
-      setState(() {
-        listRoom.insertAll(0, roomsMap);
-      });
-    }
-  }
-
-  void _writeRoomFile() async {
-    try {
-      Map<Permission, PermissionStatus> statuses = await [
-        Permission.storage,
-      ].request();
-      List<List<dynamic>> rows = [];
-      List<dynamic> row = [];
-      row.add("id");
-      row.add("status");
-      row.add("timer");
-      row.add("room");
-      row.add("name");
-      row.add("cccd");
-      row.add("people");
-      rows.add(row);
-      for (int i = 0; i < listRoom.length; i++) {
-        List<dynamic> row = [];
-        row.add(listRoom[i].id);
-        row.add(listRoom[i].status);
-        row.add(listRoom[i].timer);
-        row.add(listRoom[i].room);
-        row.add(listRoom[i].name);
-        row.add(listRoom[i].cccd);
-        row.add(listRoom[i].people);
-        rows.add(row);
-      }
-      String csv = const ListToCsvConverter().convert(rows);
-      final directory = await getExternalStorageDirectory();
-      // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/files
-      final path = '${directory?.path}/rooms.csv';
-      File f = await File(path).create(recursive: true);
-      await f.writeAsString(csv);
-    } on PlatformException catch (ex) {
-      print(ex);
-    } catch (ex) {
-      print(ex);
-    }
-  }
-
-  void handleAddRoom() {
-    setState(() {
-      listRoom.add(RoomModel(
-          id: '${UniqueKey().hashCode}',
-          cccd: '',
-          name: '',
-          people: peopleController.text,
-          room: roomController.text,
-          status: roomStatusE.Available.name,
-          timer: ''));
-    });
-    _writeRoomFile();
+    context.read<RoomBloc>().add(RoomLoadData());
   }
 
   Future<void> _dialogCreateRoom(
@@ -195,12 +101,52 @@ class _SettingScreenState extends State<SettingScreen> {
               onPressed: () {
                 if (roomController.text.isNotEmpty &&
                     int.parse(peopleController.text) > 0) {
-                  handleAddRoom();
+                  // handleAddRoom();
+                  context.read<RoomBloc>().add(RoomAdd(
+                      roomCode: roomController.text,
+                      roomPeople: peopleController.text,
+                      roomStatus: roomStatusE.Available.name));
                   Navigator.of(context).pop();
                 } else {
                   ShowSnackBar().showSnackbar(
                       context, 'Please enter room number & people');
                 }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _dialogDelete(BuildContext context, String title, int index) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Notion'),
+          content: Text(
+            'Are you sure you want to delete room $title?',
+            style: const TextStyle(fontSize: 18),
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Delete'),
+              onPressed: () {
+                context.read<RoomBloc>().add(RoomDeleteItem(index: index));
+                Navigator.of(context).pop();
               },
             ),
           ],
@@ -220,39 +166,51 @@ class _SettingScreenState extends State<SettingScreen> {
     }
   }
 
-  List<Widget> renderItemRooms() {
+  List<Widget> renderItemRooms(List<RoomModel> listData) {
     return List.generate(
-      listRoom.length,
+      listData.length,
       (index) => Stack(children: [
-        Container(
-          padding: const EdgeInsets.only(left: 10, top: 35),
-          decoration: BoxDecoration(
-              borderRadius: const BorderRadius.all(Radius.circular(20)),
-              color: renderColorStatus(listRoom[index].status).withOpacity(0.3),
-              border: Border.all(
-                  width: 1, color: renderColorStatus(listRoom[index].status))),
-          child: Column(children: [
-            BaseWidgets.instance.rowInfo('Timer: ',
-                listRoom[index].timer.isEmpty ? '---' : listRoom[index].timer),
-            const SizedBox(
-              height: 5,
-            ),
-            BaseWidgets.instance.rowInfo('Room: ',
-                listRoom[index].room.isEmpty ? '---' : listRoom[index].room),
-            const SizedBox(
-              height: 5,
-            ),
-            BaseWidgets.instance.rowInfo('Name: ',
-                listRoom[index].name.isEmpty ? '---' : listRoom[index].name),
-            const SizedBox(
-              height: 5,
-            ),
-            BaseWidgets.instance
-                .rowInfo('Max People: ', listRoom[index].people),
-            const SizedBox(
-              height: 5,
-            ),
-          ]),
+        GestureDetector(
+          onLongPress: () => _dialogDelete(
+            context,
+            listData[index].room,
+            index,
+          ),
+          child: Container(
+            padding: const EdgeInsets.only(left: 10, top: 35),
+            decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(20)),
+                color:
+                    renderColorStatus(listData[index].status).withOpacity(0.3),
+                border: Border.all(
+                    width: 1,
+                    color: renderColorStatus(listData[index].status))),
+            child: Column(children: [
+              BaseWidgets.instance.rowInfo(
+                  'Timer: ',
+                  listData[index].timer.isEmpty
+                      ? '---'
+                      : listData[index].timer),
+              const SizedBox(
+                height: 5,
+              ),
+              BaseWidgets.instance.rowInfo('Room: ',
+                  listData[index].room.isEmpty ? '---' : listData[index].room),
+              const SizedBox(
+                height: 5,
+              ),
+              BaseWidgets.instance.rowInfo('Name: ',
+                  listData[index].name.isEmpty ? '---' : listData[index].name),
+              const SizedBox(
+                height: 5,
+              ),
+              BaseWidgets.instance
+                  .rowInfo('Max People: ', listData[index].people),
+              const SizedBox(
+                height: 5,
+              ),
+            ]),
+          ),
         ),
         Positioned(
             right: 8,
@@ -263,7 +221,10 @@ class _SettingScreenState extends State<SettingScreen> {
                 decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.all(Radius.circular(12))),
-                child: Text((listRoom[index].status),
+                child: Text(
+                    (listData[index].status.isEmpty
+                        ? '---'
+                        : listData[index].status),
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -281,7 +242,7 @@ class _SettingScreenState extends State<SettingScreen> {
           centerTitle: true,
           backgroundColor: Colors.black,
           leading: GestureDetector(
-              onTap: () => widget.openDrawer(),
+              onTap: () => widget.openDrawer!(),
               child: const Icon(
                 Icons.menu,
                 color: Colors.white,
@@ -304,14 +265,17 @@ class _SettingScreenState extends State<SettingScreen> {
             color: Colors.black,
           ),
         ),
-        body: GestureDetector(
-            onTap: () {},
-            child: GridView.count(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                crossAxisSpacing: 5,
-                mainAxisSpacing: 5,
-                crossAxisCount: 2,
-                children: renderItemRooms())));
+        body: BlocBuilder<RoomBloc, RoomState>(builder: (context, state) {
+          // if (state.errorMessage != null) {
+          //   ShowSnackBar().showSnackbar(context, state.errorMessage!);
+          // }
+
+          return GridView.count(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              crossAxisSpacing: 5,
+              mainAxisSpacing: 5,
+              crossAxisCount: 2,
+              children: renderItemRooms(state.listRoom));
+        }));
   }
 }

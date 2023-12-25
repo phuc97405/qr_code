@@ -12,3 +12,9 @@ class HomeInitial extends HomeEvent {}
 class HomeLoadData extends HomeEvent {}
 
 class HomeScanQR extends HomeEvent {}
+
+class HomeRemoverItem extends HomeEvent {
+  final int indexItemRemove;
+
+  const HomeRemoverItem(this.indexItemRemove);
+}

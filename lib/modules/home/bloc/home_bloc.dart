@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -45,15 +47,22 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               room: element[10],
             ));
           });
-          emit(HomeState.loadData(usersMap));
-          // setState(() {
-          //   data.insertAll(0, usersMap);
-          // });
+          emit(HomeState.loadData(
+            usersMap,
+          ));
         }
       } catch (e) {
         print('error: $e');
       }
     });
+
+    on<HomeRemoverItem>((event, emit) {
+      List<InfoModel> listNew = state.dateHistory.map((e) => e).toList();
+      listNew.removeAt(event.indexItemRemove);
+      _writeFileCsv();
+      emit(HomeState.loadData(listNew));
+    });
+
     on<HomeScanQR>((event, emit) async {
       String barcodeScanRes;
       List<InfoModel> listNew = state.dateHistory.map((e) => e).toList();
@@ -72,22 +81,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 DateTime.fromMillisecondsSinceEpoch(
                     int.parse(element.createAt))));
         if (indexExist != -1) {
-          //   listNew.map((e) {
-          //     var index = listNew.indexOf(e);
-          //     if (index == indexExist) {
-          //       return {
-          //         ...e,
-          //         e.isCheckIn: false,
-          //       };
-          //     } else
-          //       return e;
-          //   }).toList();
           listNew[indexExist].isCheckIn = !listNew[indexExist].isCheckIn;
           listNew[indexExist].updateAt =
               DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
-
-          // listNew[indexExist]={...listNew[indexExist],isCheckIn:false,updateAt:DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now())}
-
           emit(HomeState.loadData(listNew));
         } else {
           emit(HomeState.loadData([
@@ -106,23 +102,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 room: ''),
             ...state.dateHistory
           ]));
-          // event.listData.insert(
-          //     0,
-          //     InfoModel(
-          //         isCheckIn: true,
-          //         id: '${UniqueKey().hashCode}',
-          //         cccd: '${mapList[0]}/${mapList[1]}',
-          //         name: mapList[2],
-          //         birthDay: mapList[3],
-          //         gender: mapList[4],
-          //         address: mapList[5],
-          //         createdDate: mapList[6],
-          //         createAt: DateTime.now().millisecondsSinceEpoch.toString(),
-          //         // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
-          //         updateAt: '',
-          //         room: ''));
         }
-        // _writeCsvFile();
+        _writeFileCsv();
         // ShowSnackBar().showSnackbar(context, 'Saving...');
         // } on PlatformException {
         //   barcodeScanRes = "Failed to get platform version.";
@@ -130,5 +111,51 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         print(e);
       }
     });
+  }
+
+  void _writeFileCsv() async {
+    try {
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+      ].request();
+      List<List<dynamic>> rows = [];
+      List<dynamic> row = [];
+      row.add("id");
+      row.add("cccd");
+      row.add("name");
+      row.add("birthDay");
+      row.add("gender");
+      row.add("address");
+      row.add("createdDate");
+      row.add("createAt");
+      row.add("isCheckIn");
+      row.add("updateAt");
+      row.add("room");
+      rows.add(row);
+      for (int i = 0; i < state.dateHistory.length; i++) {
+        List<dynamic> row = [];
+        row.add(state.dateHistory[i].id);
+        row.add(state.dateHistory[i].cccd);
+        row.add(state.dateHistory[i].name);
+        row.add(state.dateHistory[i].birthDay);
+        row.add(state.dateHistory[i].gender);
+        row.add(state.dateHistory[i].address);
+        row.add(state.dateHistory[i].createdDate);
+        row.add(state.dateHistory[i].createAt);
+        row.add(state.dateHistory[i].isCheckIn);
+        row.add(state.dateHistory[i].updateAt);
+        row.add(state.dateHistory[i].room);
+        rows.add(row);
+      }
+      String csv = const ListToCsvConverter().convert(rows);
+      final directory = await getExternalStorageDirectory();
+      final path = '${directory?.path}/users.csv';
+      File f = await File(path).create(recursive: true);
+      await f.writeAsString(csv);
+    } on PlatformException catch (ex) {
+      print(ex);
+    } catch (ex) {
+      print(ex);
+    }
   }
 }
