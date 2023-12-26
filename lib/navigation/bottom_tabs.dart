@@ -22,6 +22,7 @@ class _BottomTabsState extends State<BottomTabs> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
   int currentPageIndex = 0;
   final String _url = 'https://facebook.com/phuc97405';
+  final String _tel = 'tel://0396900698';
 
   void openDrawer() {
     scaffoldKey.currentState?.openDrawer();
@@ -63,7 +64,13 @@ class _BottomTabsState extends State<BottomTabs> {
   }
 
   void _launchURL() async {
+    // ignore: deprecated_member_use
     if (!await launch(_url)) throw 'Could not launch $_url';
+  }
+
+  void _launchTel() async {
+    // ignore: deprecated_member_use
+    if (!await launch(_tel)) throw 'Could not launch $_tel';
   }
 
   @override
@@ -119,13 +126,28 @@ class _BottomTabsState extends State<BottomTabs> {
                   }),
               const Divider(),
               const Spacer(),
-              InkWell(
-                  onTap: _launchURL,
-                  child: Image.asset(
-                    'lib/images/fb.png',
-                    width: 40,
-                    height: 40,
-                  )),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  InkWell(
+                      onTap: _launchURL,
+                      child: Image.asset(
+                        'lib/images/fb.png',
+                        width: 40,
+                        height: 40,
+                      )),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  InkWell(
+                      onTap: _launchTel,
+                      child: Image.asset(
+                        'lib/images/call.png',
+                        width: 40,
+                        height: 40,
+                      )),
+                ],
+              ),
               const SizedBox(
                 height: 10,
               )
