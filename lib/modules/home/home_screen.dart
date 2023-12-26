@@ -7,7 +7,7 @@ import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:my_room/models/room_model.dart';
 import 'package:my_room/modules/home/bloc/home_bloc.dart';
-import 'package:my_room/modules/rooms/bloc/room_bloc.dart';
+import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function openDrawer;
@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late int indexFilterDate = 0;
   final _scrollController = ScrollController();
   late List<String> listRoom =
-      context.read<RoomBloc>().state.listRoom.map((e) => e.room).toList();
+      context.read<RoomCubit>().state.listRoom.map((e) => e.room).toList();
   // late final roomList = context.read<RoomBloc>().add(RoomLoadData());
 
   void loadMoreWhenScrollFilter() {
@@ -49,8 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
               DateTime.now().month,
               DateTime.now().day,
             ).subtract(Duration(days: i)));
-    print(DateTime.now()
-        .isSameDate(DateTime.now(), dateHistory[indexFilterDate]));
+    // print(DateTime.now()
+    //     .isSameDate(DateTime.now(), dateHistory[indexFilterDate]));
   }
 
   Widget _emptyWidget() {
@@ -144,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return showModalBottomSheet(
         context: context,
         builder: (context) {
+          print(user.createAt);
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             width: context.width,
@@ -161,7 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       viewButton(
                           Icons.timelapse_sharp,
-                          '${(DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(int.parse(user.createAt)).subtract(const Duration(hours: 20))).inMinutes / 60).toStringAsFixed(1)}H',
+                          DateTime.now()
+                              .aboutHour(user.updateAt, user.createAt),
+                          // '${(DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(int.parse(user.createAt))).inMinutes / 60).toStringAsFixed(1)}H',
                           'Timer'),
                       viewButton(Icons.numbers,
                           user.room.isEmpty ? '---' : user.room, 'Room'),
@@ -295,17 +298,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 Positioned(
                     right: 8,
                     bottom: 0,
-                    child: BlocBuilder<RoomBloc, RoomState>(
+                    child: BlocBuilder<RoomCubit, RoomState>(
                       builder: (context, state) {
-                        if (state.listRoom.isNotEmpty &&
-                            state.listRoom[index].room.isEmpty) {
+                        if (state.listRoom.any((element) =>
+                                element.status == roomStatusE.Available.name) &&
+                            users[index].room.isEmpty) {
                           return DropdownButton<String>(
                               icon: const Icon(
                                 Icons.add_home_outlined,
                                 size: 20,
                               ),
                               underline: const SizedBox(),
-                              items: state.listRoom.map((RoomModel value) {
+                              items: state.listRoom
+                                  .where((element) =>
+                                      element.status ==
+                                      roomStatusE.Available.name)
+                                  .toList()
+                                  .map((RoomModel value) {
                                 return DropdownMenuItem<String>(
                                   value: value.room,
                                   child: Text(value.room),
@@ -314,13 +323,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               onChanged: (room) {
                                 context.read<HomeBloc>().add(
                                     HomeAddRoomToUser(users[index].id, room!));
-                                context.read<RoomBloc>().add(RoomUpdate(
+                                context.read<RoomCubit>().roomUpdate(
                                     '',
                                     users[index].name,
                                     users[index].isCheckIn
                                         ? roomStatusE.In.name
                                         : roomStatusE.Out.name,
-                                    room));
+                                    room);
                               });
                         } else {
                           return const SizedBox();
@@ -393,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
         heroTag: 'scanQr',
         tooltip: 'scan', // used by assistive technologies
         onPressed: () => {
-          context.read<HomeBloc>().add(HomeScanQR()),
+          context.read<HomeBloc>().add(const HomeScanQR()),
         },
         // _scanQRNormal,
         backgroundColor: Colors.white,
@@ -464,35 +473,39 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Flexible(
-              child: Container(
-                margin: const EdgeInsets.only(top: 20),
-                decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15))),
-                child: BlocBuilder<HomeBloc, HomeState>(
-                    // buildWhen: (previous, current) =>
-                    //     previous.dateHistory != previous.dateHistory,
-                    builder: (context, state) => state.dateHistory
+                child: Container(
+              margin: const EdgeInsets.only(top: 20),
+              decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      topRight: Radius.circular(15))),
+              child: BlocBuilder<HomeBloc, HomeState>(
+
+                  // buildWhen: (previous, current) =>
+                  //     previous.dateHistory != previous.dateHistory,
+                  builder: (context, state) {
+                context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                return state.listUsers
+                        .where((element) => DateTime.now().isSameDate(
+                            DateTime.fromMillisecondsSinceEpoch(
+                                int.parse(element.createAt)),
+                            dateHistory[indexFilterDate]))
+                        .isEmpty
+                    ? _emptyWidget()
+                    : GridView.count(
+                        padding: const EdgeInsets.all(5),
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                        crossAxisCount: 2,
+                        children: _infoUser(state.listUsers
                             .where((element) => DateTime.now().isSameDate(
                                 DateTime.fromMillisecondsSinceEpoch(
                                     int.parse(element.createAt)),
                                 dateHistory[indexFilterDate]))
-                            .isEmpty
-                        ? _emptyWidget()
-                        : GridView.count(
-                            padding: const EdgeInsets.all(5),
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
-                            crossAxisCount: 2,
-                            children: _infoUser(state.dateHistory
-                                .where((element) => DateTime.now().isSameDate(
-                                    DateTime.fromMillisecondsSinceEpoch(int.parse(element.createAt)),
-                                    dateHistory[indexFilterDate]))
-                                .toList()))),
-              ),
-            ),
+                            .toList()));
+              }),
+            )),
           ],
         ),
       ),

@@ -10,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
-import 'package:my_room/modules/rooms/rooms_screen.dart';
+import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -33,7 +33,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             .toList();
         mapList.removeAt(0); //remove row properties key
         if (mapList.isNotEmpty) {
-          mapList.forEach((element) {
+          for (var element in mapList) {
             usersMap.add(InfoModel(
               id: '${element[0]}',
               cccd: '${element[1]}',
@@ -47,8 +47,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               updateAt: '${element[9]}',
               room: '${element[10]}',
             ));
-          });
-          emit(HomeState.loadData(
+          }
+          emit(HomeState.setData(
             usersMap,
           ));
         }
@@ -57,11 +57,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
     });
 
+    // ignore: void_checks
     on<HomeRemoverItem>((event, emit) {
       try {
-        List<InfoModel> listNew = state.dateHistory.map((e) => e).toList();
+        List<InfoModel> listNew = state.listUsers.map((e) => e).toList();
         listNew.removeAt(event.indexItemRemove);
-        emit(HomeState.loadData(listNew));
+        emit(HomeState.setData(listNew));
         _writeFileCsv();
       } catch (e) {
         print('HomeRemoverItem$e');
@@ -69,9 +70,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     });
 
     on<HomeScanQR>((event, emit) async {
-      String barcodeScanRes;
-      List<InfoModel> listNew = [...state.dateHistory];
       try {
+        print('currentState: $state');
+        String barcodeScanRes;
+        List<InfoModel> listNew = [...state.listUsers];
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
         // ignore: unrelated_type_equality_checks
@@ -88,10 +90,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         if (indexExist != -1) {
           listNew[indexExist].isCheckIn = !listNew[indexExist].isCheckIn;
           listNew[indexExist].updateAt =
-              DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
-          emit(HomeState.loadData(listNew));
+              DateTime.now().millisecondsSinceEpoch.toString();
+          // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
+          emit(HomeState.setData(listNew));
         } else {
-          emit(HomeState.loadData([
+          emit(HomeState.setData([
             InfoModel(
                 isCheckIn: true,
                 id: '${UniqueKey().hashCode}',
@@ -105,7 +108,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
                 updateAt: '',
                 room: ''),
-            ...state.dateHistory
+            ...state.listUsers
           ]));
         }
         _writeFileCsv();
@@ -119,13 +122,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     on<HomeAddRoomToUser>((event, emit) {
       try {
-        List<InfoModel> listNew = [...state.dateHistory];
-        print('HomeAddRoomToUser');
+        List<InfoModel> listNew = [...state.listUsers];
         final i = listNew.indexWhere((element) => event.id == element.id);
-        print('i$i');
         listNew[i].room = event.room;
         _writeFileCsv();
-        emit(HomeState.loadData(listNew));
+        emit(HomeState.setData(listNew));
       } catch (e) {
         print('HomeAddRoomToUser$e');
       }
@@ -137,6 +138,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,
       ].request();
+      // print(state.usersList);
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");
@@ -151,19 +153,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       row.add("updateAt");
       row.add("room");
       rows.add(row);
-      for (int i = 0; i < state.dateHistory.length; i++) {
+      for (int i = 0; i < state.listUsers.length; i++) {
         List<dynamic> row = [];
-        row.add(state.dateHistory[i].id);
-        row.add(state.dateHistory[i].cccd);
-        row.add(state.dateHistory[i].name);
-        row.add(state.dateHistory[i].birthDay);
-        row.add(state.dateHistory[i].gender);
-        row.add(state.dateHistory[i].address);
-        row.add(state.dateHistory[i].createdDate);
-        row.add(state.dateHistory[i].createAt);
-        row.add(state.dateHistory[i].isCheckIn);
-        row.add(state.dateHistory[i].updateAt);
-        row.add(state.dateHistory[i].room);
+        row.add(state.listUsers[i].id);
+        row.add(state.listUsers[i].cccd);
+        row.add(state.listUsers[i].name);
+        row.add(state.listUsers[i].birthDay);
+        row.add(state.listUsers[i].gender);
+        row.add(state.listUsers[i].address);
+        row.add(state.listUsers[i].createdDate);
+        row.add(state.listUsers[i].createAt);
+        row.add(state.listUsers[i].isCheckIn);
+        row.add(state.listUsers[i].updateAt);
+        row.add(state.listUsers[i].room);
         rows.add(row);
       }
       String csv = const ListToCsvConverter().convert(rows);

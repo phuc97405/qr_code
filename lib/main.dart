@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/modules/home/bloc/home_bloc.dart';
 import 'package:my_room/modules/rooms/bloc/room_bloc.dart';
+import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
 import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:my_room/modules/splash/splash_screen.dart';
 import 'package:my_room/navigation/bottom_tabs.dart';
@@ -13,7 +14,7 @@ void main() {
         create: (BuildContext context) => HomeBloc(),
       ),
       BlocProvider(
-        create: (BuildContext context) => RoomBloc(),
+        create: (BuildContext context) => RoomCubit(),
       )
     ],
     child: MyApp(),

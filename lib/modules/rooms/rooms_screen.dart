@@ -4,7 +4,7 @@ import 'package:my_room/components/base_widgets.dart';
 import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/models/room_model.dart';
-import 'package:my_room/modules/rooms/bloc/room_bloc.dart';
+import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
 
 class RoomScreen extends StatefulWidget {
   final Function? openDrawer;
@@ -15,13 +15,13 @@ class RoomScreen extends StatefulWidget {
 }
 
 class _RoomScreenState extends State<RoomScreen> {
-  TextEditingController roomController = TextEditingController(text: '200');
-  TextEditingController peopleController = TextEditingController(text: '2');
+  // TextEditingController roomController = TextEditingController(text: '200');
+  // TextEditingController peopleController = TextEditingController(text: '2');
 
   @override
   void initState() {
     super.initState();
-    context.read<RoomBloc>().add(RoomLoadData());
+    context.read<RoomCubit>().roomLoadFileLocal();
   }
 
   Future<void> _dialogCreateRoom(
@@ -49,7 +49,7 @@ class _RoomScreenState extends State<RoomScreen> {
                 height: 10,
               ),
               TextField(
-                controller: roomController,
+                controller: context.read<RoomCubit>().state.roomController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   contentPadding: EdgeInsets.all(10),
@@ -71,7 +71,7 @@ class _RoomScreenState extends State<RoomScreen> {
                 height: 10,
               ),
               TextField(
-                controller: peopleController,
+                controller: context.read<RoomCubit>().state.peopleController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   contentPadding: EdgeInsets.all(10),
@@ -99,13 +99,23 @@ class _RoomScreenState extends State<RoomScreen> {
               ),
               child: const Text('Create'),
               onPressed: () {
-                if (roomController.text.isNotEmpty &&
-                    int.parse(peopleController.text) > 0) {
+                if (context
+                        .read<RoomCubit>()
+                        .state
+                        .roomController
+                        .text
+                        .isNotEmpty &&
+                    int.parse(context
+                            .read<RoomCubit>()
+                            .state
+                            .peopleController
+                            .text) >
+                        0) {
                   // handleAddRoom();
-                  context.read<RoomBloc>().add(RoomAdd(
-                      roomCode: roomController.text,
-                      roomPeople: peopleController.text,
-                      roomStatus: roomStatusE.Available.name));
+                  context.read<RoomCubit>().roomAdd(
+                      context.read<RoomCubit>().state.roomController.text,
+                      context.read<RoomCubit>().state.peopleController.text,
+                      roomStatusE.Available.name);
                   Navigator.of(context).pop();
                 } else {
                   ShowSnackBar().showSnackbar(
@@ -145,7 +155,7 @@ class _RoomScreenState extends State<RoomScreen> {
               ),
               child: const Text('Delete'),
               onPressed: () {
-                context.read<RoomBloc>().add(RoomDelete(index: index));
+                context.read<RoomCubit>().roomRemove(index);
                 Navigator.of(context).pop();
               },
             ),
@@ -216,9 +226,15 @@ class _RoomScreenState extends State<RoomScreen> {
           bottom: 10,
           right: 8,
           child: listData[index].status == roomStatusE.Out.name
-              ? const Icon(
-                  Icons.cleaning_services_outlined,
-                  size: 20,
+              ? GestureDetector(
+                  onTap: () => {
+                    context.read<RoomCubit>().roomUpdate('', '',
+                        roomStatusE.Available.name, listData[index].room)
+                  },
+                  child: const Icon(
+                    Icons.cleaning_services_outlined,
+                    size: 20,
+                  ),
                 )
               : const SizedBox(),
         )),
@@ -275,7 +291,7 @@ class _RoomScreenState extends State<RoomScreen> {
             color: Colors.black,
           ),
         ),
-        body: BlocBuilder<RoomBloc, RoomState>(builder: (context, state) {
+        body: BlocBuilder<RoomCubit, RoomState>(builder: (context, state) {
           return GridView.count(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
               crossAxisSpacing: 5,

@@ -9,6 +9,7 @@ import 'package:my_room/modules/home/home_screen.dart';
 import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BottomTabs extends StatefulWidget {
   const BottomTabs({super.key});
@@ -20,6 +21,7 @@ class BottomTabs extends StatefulWidget {
 class _BottomTabsState extends State<BottomTabs> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
   int currentPageIndex = 0;
+  final String _url = 'https://facebook.com/phuc97405';
 
   void openDrawer() {
     scaffoldKey.currentState?.openDrawer();
@@ -60,6 +62,10 @@ class _BottomTabsState extends State<BottomTabs> {
     // files.add(XFile(path, name: 'My Users File'));
   }
 
+  void _launchURL() async {
+    if (!await launch(_url)) throw 'Could not launch $_url';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,8 +74,8 @@ class _BottomTabsState extends State<BottomTabs> {
         drawerScrimColor: Colors.black,
         drawer: Drawer(
           elevation: 16,
-          child: ListView(
-            padding: const EdgeInsets.all(0.0),
+          child: Column(
+            // padding: const EdgeInsets.all(0.0),
             children: <Widget>[
               UserAccountsDrawerHeader(
                 accountName: const Text("My Room"),
@@ -91,7 +97,7 @@ class _BottomTabsState extends State<BottomTabs> {
               ),
               const Divider(),
               ListTile(
-                title: const Text("Setting Room Price"),
+                title: const Text("Setting Room Price(Update)"),
                 trailing: const Icon(Icons.price_change),
                 onTap: () => {},
               ),
@@ -112,12 +118,17 @@ class _BottomTabsState extends State<BottomTabs> {
                     _saveFileToDownload();
                   }),
               const Divider(),
-              ListTile(
-                title: const Text("Support"),
-                trailing: const Icon(Icons.support_agent),
-                onTap: () => {},
-              ),
-              const Divider(),
+              const Spacer(),
+              InkWell(
+                  onTap: _launchURL,
+                  child: Image.asset(
+                    'lib/images/fb.png',
+                    width: 40,
+                    height: 40,
+                  )),
+              const SizedBox(
+                height: 10,
+              )
             ],
           ),
         ),
