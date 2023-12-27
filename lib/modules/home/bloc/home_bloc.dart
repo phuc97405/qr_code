@@ -7,10 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
-import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -71,6 +69,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     on<HomeScanQR>((event, emit) async {
       try {
+        bool checkPermission = await checkPermissionStatus();
+        if (!checkPermission) {
+          openAppSettings();
+          return;
+        }
+
         print('currentState: $state');
         String barcodeScanRes;
         List<InfoModel> listNew = [...state.listUsers];
@@ -132,13 +136,30 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
     });
   }
+  Future<bool> checkPermissionStatus() async {
+    Map<Permission, PermissionStatus> status =
+        await [Permission.storage, Permission.camera].request();
+    print('status:$status');
+    // ignore: unrelated_type_equality_checks
+    if (status[Permission.camera] == PermissionStatus.granted &&
+        status[Permission.storage] == PermissionStatus.granted) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   void _writeFileCsv() async {
     try {
-      Map<Permission, PermissionStatus> statuses = await [
-        Permission.storage,
-      ].request();
-      // print(state.usersList);
+      bool checkPermission = await checkPermissionStatus();
+      if (!checkPermission) {
+        openAppSettings();
+        return;
+      }
+      // Map<Permission, PermissionStatus> statuses = await [
+      //   Permission.storage,
+      // ].request();
+      // print(statuses);
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");

@@ -50,7 +50,6 @@ class RoomCubit extends Cubit<RoomState> {
       List<RoomModel> listNew = [...state.listRoom];
       final checkExist =
           listNew.indexWhere((element) => element.room == roomCode);
-      print(checkExist);
       if (checkExist == -1) {
         listNew.add(RoomModel(
           id: '${UniqueKey().hashCode}',
@@ -63,8 +62,9 @@ class RoomCubit extends Cubit<RoomState> {
 
         emit(RoomState(listRoom: listNew));
         _writeRoomFile();
+      } else {
+        print('user is existing');
       }
-      print('user is existing');
       // emit(RoomState.errorAdd(listNew, 'user is exist'));
     } catch (e) {
       print(e);

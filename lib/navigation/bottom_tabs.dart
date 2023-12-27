@@ -3,8 +3,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/snack_bar.dart';
+import 'package:my_room/modules/home/bloc/home_bloc.dart';
 import 'package:my_room/modules/home/home_screen.dart';
 import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:path_provider/path_provider.dart';
@@ -30,16 +32,12 @@ class _BottomTabsState extends State<BottomTabs> {
 
   void _shareFile() async {
     final directory = await getExternalStorageDirectory();
-    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path = '${directory?.path}/users.csv';
     if (path.isEmpty) {
       // ignore: use_build_context_synchronously
       ShowSnackBar().showSnackbar(context, 'User export is empty!');
       return;
     }
-    // File f = await File(path).create(recursive: true);
-    // await f.copy(
-    //     "/storage/emulated/0/Download/data_${DateFormat('kk_mm_dd_MM_yyyy').format(DateTime.now())}.csv");
     final files = <XFile>[];
     files.add(XFile(path, name: 'My Users File'));
     Share.shareXFiles(files, text: 'My Users File');
@@ -47,7 +45,6 @@ class _BottomTabsState extends State<BottomTabs> {
 
   void _saveFileToDownload() async {
     final directory = await getExternalStorageDirectory();
-    // getApplicationDocumentsDirectory(); //data/user/0/com.example.qr_code/app_flutter
     final path = '${directory?.path}/users.csv';
     if (path.isEmpty) {
       // ignore: use_build_context_synchronously
@@ -59,8 +56,6 @@ class _BottomTabsState extends State<BottomTabs> {
         "/storage/emulated/0/Download/data_${DateFormat('kk_mm_dd_MM_yyyy').format(DateTime.now())}.csv");
     // ignore: use_build_context_synchronously
     ShowSnackBar().showSnackbar(context, 'Save file to download successfully!');
-    // final files = <XFile>[];
-    // files.add(XFile(path, name: 'My Users File'));
   }
 
   void _launchURL() async {
@@ -71,6 +66,13 @@ class _BottomTabsState extends State<BottomTabs> {
   void _launchTel() async {
     // ignore: deprecated_member_use
     if (!await launch(_tel)) throw 'Could not launch $_tel';
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    context.read<HomeBloc>().checkPermissionStatus();
   }
 
   @override
