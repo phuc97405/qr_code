@@ -40,10 +40,48 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void showAlertDialog(context) => showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => CupertinoAlertDialog(
+          title: const Text('Permission Denied'),
+          content: const Text('Allow access to camera'),
+          actions: <CupertinoDialogAction>[
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => openAppSettings(),
+              child: const Text('Settings'),
+            ),
+          ],
+        ),
+      );
+
+  Future<bool> _checkPermission(Permission permission) async {
+    var status = await permission.request();
+    if (status != PermissionStatus.granted) {
+      // ignore: use_build_context_synchronously
+      showAlertDialog(context);
+      return false;
+    }
+    return true;
+  }
+
+  void getDataInitial() async {
+    // ignore: unrelated_type_equality_checks
+    if (Permission.camera.status == PermissionStatus.granted) {
+      // ignore: use_build_context_synchronously
+      context.read<HomeBloc>().add(HomeLoadData());
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    context.read<HomeBloc>().add(HomeLoadData());
+    getDataInitial();
     dateHistory = List<DateTime>.generate(
         30,
         (i) => DateTime.utc(
@@ -51,8 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
               DateTime.now().month,
               DateTime.now().day,
             ).subtract(Duration(days: i)));
-    // print(DateTime.now()
-    //     .isSameDate(DateTime.now(), dateHistory[indexFilterDate]));
   }
 
   Widget _emptyWidget() {
@@ -322,16 +358,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: Text(value.room),
                                 );
                               }).toList(),
-                              onChanged: (room) {
+                              onChanged: (room) async {
                                 context.read<HomeBloc>().add(
                                     HomeAddRoomToUser(users[index].id, room!));
-                                context.read<RoomCubit>().roomUpdate(
-                                    '',
-                                    users[index].name,
-                                    users[index].isCheckIn
-                                        ? roomStatusE.In.name
-                                        : roomStatusE.Out.name,
-                                    room);
+                                if (await _checkPermission(
+                                    Permission.storage)) {
+                                  // ignore: use_build_context_synchronously
+                                  context.read<RoomCubit>().roomUpdate(
+                                      '',
+                                      users[index].name,
+                                      users[index].isCheckIn
+                                          ? roomStatusE.In.name
+                                          : roomStatusE.Out.name,
+                                      room);
+                                }
                               });
                         } else {
                           return const SizedBox();
@@ -366,26 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
       indexFilterDate = index;
     });
   }
-
-  void showAlertDialog(context) => showCupertinoDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) => CupertinoAlertDialog(
-          title: const Text('Permission Denied'),
-          content: const Text('Allow access to gallery and photos'),
-          actions: <CupertinoDialogAction>[
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => openAppSettings(),
-              child: const Text('Settings'),
-            ),
-          ],
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -423,8 +443,12 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'scanQr',
         tooltip: 'scan', // used by assistive technologies
-        onPressed: () => {
-          context.read<HomeBloc>().add(const HomeScanQR()),
+        onPressed: () async {
+          if (await _checkPermission(Permission.camera)) {
+            // ignore: use_build_context_synchronously
+            context.read<HomeBloc>().add(const HomeScanQR());
+          }
+          ;
         },
         // _scanQRNormal,
         backgroundColor: Colors.white,
@@ -507,7 +531,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   // buildWhen: (previous, current) =>
                   //     previous.dateHistory != previous.dateHistory,
                   builder: (context, state) {
-                context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                if (state is HomeAddRoomToUser) {
+                  context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                }
                 return state.listUsers
                         .where((element) => DateTime.now().isSameDate(
                             DateTime.fromMillisecondsSinceEpoch(

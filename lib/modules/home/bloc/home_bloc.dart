@@ -11,7 +11,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
@@ -20,11 +19,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(const HomeState.initial([])) {
     on<HomeLoadData>((event, emit) async {
       try {
-        final checkPermission = await _checkPermission(Permission.camera);
-        if (!checkPermission) {
-          openAppSettings();
-          return;
-        }
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
         List<InfoModel> usersMap = [];
@@ -75,12 +69,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     on<HomeScanQR>((event, emit) async {
       try {
-        final checkPermission = await _checkPermission(Permission.camera);
-        if (!checkPermission) {
-          openAppSettings();
-          return;
-        }
-        print('currentState: $state');
         String barcodeScanRes;
         List<InfoModel> listNew = [...state.listUsers];
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
@@ -100,7 +88,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           listNew[indexExist].isCheckIn = !listNew[indexExist].isCheckIn;
           listNew[indexExist].updateAt =
               DateTime.now().millisecondsSinceEpoch.toString();
-          // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now());
           emit(HomeState.setData(listNew));
         } else {
           emit(HomeState.setData([
@@ -114,16 +101,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 address: mapList[5],
                 createdDate: mapList[6],
                 createAt: DateTime.now().millisecondsSinceEpoch.toString(),
-                // DateFormat('kk:mm dd/MM/yyyy').format(DateTime.now()),
                 updateAt: '',
                 room: ''),
             ...state.listUsers
           ]));
         }
         _writeFileCsv();
-        // ShowSnackBar().showSnackbar(context, 'Saving...');
-        // } on PlatformException {
-        //   barcodeScanRes = "Failed to get platform version.";
       } catch (e) {
         print('HomeScanQR$e');
       }
@@ -140,23 +123,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         print('HomeAddRoomToUser$e');
       }
     });
-  }
-
-  Future<bool> _checkPermission(Permission permission) async {
-    var status = await permission.request();
-    return status.isGranted;
-    // if (status == PermissionStatus.granted) {
-    //   print('Permission granted');
-    //   return true;
-    // } else if (status == PermissionStatus.denied) {
-    //   showAlertDialog(context);
-    //   print(
-    //       'Permission denied. Show a dialog and again ask for the permission');
-    //   return false;
-    // } else if (status == PermissionStatus.permanentlyDenied) {
-    //   print('Take the user to the settings page.');
-    // }
-    // return false;
   }
 
   void _writeFileCsv() async {

@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import 'package:my_room/modules/home/bloc/home_bloc.dart';
 import 'package:my_room/modules/home/home_screen.dart';
 import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -68,11 +70,44 @@ class _BottomTabsState extends State<BottomTabs> {
     if (!await launch(_tel)) throw 'Could not launch $_tel';
   }
 
+  void showAlertDialog(context) => showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => CupertinoAlertDialog(
+          title: const Text('Permission Denied'),
+          content: const Text('Allow access to storage & camera'),
+          actions: <CupertinoDialogAction>[
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => openAppSettings(),
+              child: const Text('Settings'),
+            ),
+          ],
+        ),
+      );
+  Future<bool> _checkPermission() async {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.storage,
+    ].request();
+    print(statuses);
+    if (statuses[Permission.camera] != PermissionStatus.granted ||
+        statuses[Permission.storage] != PermissionStatus.granted) {
+      // ignore: use_build_context_synchronously
+      showAlertDialog(context);
+      return false;
+    }
+    return true;
+  }
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    // context.read<HomeBloc>().checkPermissionStatus();
+    _checkPermission();
   }
 
   @override

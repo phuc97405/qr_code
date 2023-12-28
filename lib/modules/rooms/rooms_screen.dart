@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/components/base_widgets.dart';
@@ -5,6 +6,7 @@ import 'package:my_room/components/snack_bar.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
 import 'package:my_room/models/room_model.dart';
 import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class RoomScreen extends StatefulWidget {
   final Function? openDrawer;
@@ -18,10 +20,49 @@ class _RoomScreenState extends State<RoomScreen> {
   // TextEditingController roomController = TextEditingController(text: '200');
   // TextEditingController peopleController = TextEditingController(text: '2');
 
+  void showAlertDialog(context) => showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => CupertinoAlertDialog(
+          title: const Text('Permission Denied'),
+          content: const Text('Allow access to storage'),
+          actions: <CupertinoDialogAction>[
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => openAppSettings(),
+              child: const Text('Settings'),
+            ),
+          ],
+        ),
+      );
+
+  Future<bool> _checkPermission(Permission permission) async {
+    var status = await permission.request();
+    print(status);
+    if (status != PermissionStatus.granted) {
+      // ignore: use_build_context_synchronously
+      showAlertDialog(context);
+      return false;
+    }
+    return true;
+  }
+
+  void getDataInitial() async {
+    // ignore: unrelated_type_equality_checks
+    if (Permission.storage.status == PermissionStatus.granted) {
+      // ignore: use_build_context_synchronously
+      context.read<RoomCubit>().roomLoadFileLocal();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    context.read<RoomCubit>().roomLoadFileLocal();
+    getDataInitial();
   }
 
   Future<void> _dialogCreateRoom(
@@ -98,7 +139,7 @@ class _RoomScreenState extends State<RoomScreen> {
                 textStyle: Theme.of(context).textTheme.labelLarge,
               ),
               child: const Text('Create'),
-              onPressed: () {
+              onPressed: () async {
                 if (context
                         .read<RoomCubit>()
                         .state
@@ -112,11 +153,17 @@ class _RoomScreenState extends State<RoomScreen> {
                             .text) >
                         0) {
                   // handleAddRoom();
-                  context.read<RoomCubit>().roomAdd(
-                      context.read<RoomCubit>().state.roomController.text,
-                      context.read<RoomCubit>().state.peopleController.text,
-                      roomStatusE.Available.name);
-                  Navigator.of(context).pop();
+                  if (await _checkPermission(Permission.storage)) {
+                    // ignore: use_build_context_synchronously
+                    context.read<RoomCubit>().roomAdd(
+                        // ignore: use_build_context_synchronously
+                        context.read<RoomCubit>().state.roomController.text,
+                        // ignore: use_build_context_synchronously
+                        context.read<RoomCubit>().state.peopleController.text,
+                        roomStatusE.Available.name);
+                    // ignore: use_build_context_synchronously
+                    Navigator.of(context).pop();
+                  }
                 } else {
                   ShowSnackBar().showSnackbar(
                       context, 'Please enter room number & people');

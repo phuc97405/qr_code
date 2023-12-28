@@ -11,7 +11,6 @@ import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:my_room/models/room_model.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 part 'room_state.dart';
 
@@ -19,11 +18,6 @@ class RoomCubit extends Cubit<RoomState> {
   RoomCubit() : super(RoomInitial());
 
   void roomLoadFileLocal() async {
-    final checkPermission = await _checkPermission(Permission.storage);
-    if (!checkPermission) {
-      openAppSettings();
-      return;
-    }
     final directory = await getExternalStorageDirectory();
     final path = '${directory?.path}/rooms.csv';
     List<RoomModel> roomsMap = [];
@@ -52,11 +46,6 @@ class RoomCubit extends Cubit<RoomState> {
 
   void roomAdd(String roomCode, String roomPeople, String roomStatus) async {
     try {
-      final checkPermission = await _checkPermission(Permission.storage);
-      if (!checkPermission) {
-        openAppSettings();
-        return;
-      }
       List<RoomModel> listNew = [...state.listRoom];
       final checkExist =
           listNew.indexWhere((element) => element.room == roomCode);
@@ -91,7 +80,6 @@ class RoomCubit extends Cubit<RoomState> {
   void roomUpdate(String timer, String name, String status, String room) {
     try {
       List<RoomModel> listNew = [...state.listRoom];
-
       final checkIndex = listNew.indexWhere((element) => element.room == room);
       listNew[checkIndex].name = name;
       listNew[checkIndex].status = status;
@@ -105,11 +93,6 @@ class RoomCubit extends Cubit<RoomState> {
 
   void updateAllRoom(List<InfoModel> listUsers) async {
     try {
-      final checkPermission = await _checkPermission(Permission.storage);
-      if (!checkPermission) {
-        openAppSettings();
-        return;
-      }
       List<RoomModel> listRooms = [...state.listRoom];
       if (listRooms.isEmpty || listUsers.isEmpty) {
         return;
@@ -133,11 +116,6 @@ class RoomCubit extends Cubit<RoomState> {
     } catch (e) {
       print('updateAllRoom$e');
     }
-  }
-
-  Future<bool> _checkPermission(Permission permission) async {
-    var status = await permission.request();
-    return status.isGranted;
   }
 
   void _writeRoomFile() async {
