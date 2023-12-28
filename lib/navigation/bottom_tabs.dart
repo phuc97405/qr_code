@@ -72,7 +72,7 @@ class _BottomTabsState extends State<BottomTabs> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    context.read<HomeBloc>().checkPermissionStatus();
+    // context.read<HomeBloc>().checkPermissionStatus();
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/components/base_widgets.dart';
@@ -8,6 +9,7 @@ import 'package:my_room/models/info_model.dart';
 import 'package:my_room/models/room_model.dart';
 import 'package:my_room/modules/home/bloc/home_bloc.dart';
 import 'package:my_room/modules/rooms/cubit/room_cubit.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function openDrawer;
@@ -364,6 +366,26 @@ class _HomeScreenState extends State<HomeScreen> {
       indexFilterDate = index;
     });
   }
+
+  void showAlertDialog(context) => showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => CupertinoAlertDialog(
+          title: const Text('Permission Denied'),
+          content: const Text('Allow access to gallery and photos'),
+          actions: <CupertinoDialogAction>[
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => openAppSettings(),
+              child: const Text('Settings'),
+            ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
@@ -69,12 +70,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     on<HomeScanQR>((event, emit) async {
       try {
-        bool checkPermission = await checkPermissionStatus();
+        final checkPermission = await _checkPermission(Permission.camera);
         if (!checkPermission) {
           openAppSettings();
           return;
         }
-
         print('currentState: $state');
         String barcodeScanRes;
         List<InfoModel> listNew = [...state.listUsers];
@@ -136,30 +136,31 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
     });
   }
-  Future<bool> checkPermissionStatus() async {
-    Map<Permission, PermissionStatus> status =
-        await [Permission.storage, Permission.camera].request();
-    print('status:$status');
-    // ignore: unrelated_type_equality_checks
-    if (status[Permission.camera] == PermissionStatus.granted &&
-        status[Permission.storage] == PermissionStatus.granted) {
-      return true;
-    } else {
-      return false;
-    }
+
+  Future<bool> _checkPermission(Permission permission) async {
+    var status = await permission.request();
+    return status.isGranted;
+    // if (status == PermissionStatus.granted) {
+    //   print('Permission granted');
+    //   return true;
+    // } else if (status == PermissionStatus.denied) {
+    //   showAlertDialog(context);
+    //   print(
+    //       'Permission denied. Show a dialog and again ask for the permission');
+    //   return false;
+    // } else if (status == PermissionStatus.permanentlyDenied) {
+    //   print('Take the user to the settings page.');
+    // }
+    // return false;
   }
 
   void _writeFileCsv() async {
     try {
-      bool checkPermission = await checkPermissionStatus();
+      final checkPermission = await _checkPermission(Permission.storage);
       if (!checkPermission) {
         openAppSettings();
         return;
       }
-      // Map<Permission, PermissionStatus> statuses = await [
-      //   Permission.storage,
-      // ].request();
-      // print(statuses);
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");

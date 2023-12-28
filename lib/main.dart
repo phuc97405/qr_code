@@ -11,10 +11,10 @@ void main() {
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(
-        create: (BuildContext context) => HomeBloc(),
+        create: (context) => HomeBloc(),
       ),
       BlocProvider(
-        create: (BuildContext context) => RoomCubit(),
+        create: (context) => RoomCubit(),
       )
     ],
     child: MyApp(),

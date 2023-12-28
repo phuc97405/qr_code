@@ -75,7 +75,7 @@ class RoomCubit extends Cubit<RoomState> {
     List<RoomModel> listNew = [...state.listRoom];
     listNew.removeAt(index);
     emit(RoomState(listRoom: listNew));
-    // _writeRoomFile();
+    _writeRoomFile();
   }
 
   void roomUpdate(String timer, String name, String status, String room) {
@@ -120,12 +120,18 @@ class RoomCubit extends Cubit<RoomState> {
     }
   }
 
+  Future<bool> _checkPermission(Permission permission) async {
+    var status = await permission.request();
+    return status.isGranted;
+  }
+
   void _writeRoomFile() async {
     try {
-      Map<Permission, PermissionStatus> statuses = await [
-        Permission.storage,
-      ].request();
-      print(statuses);
+      final checkPermission = await _checkPermission(Permission.storage);
+      if (!checkPermission) {
+        openAppSettings();
+        return;
+      }
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");
