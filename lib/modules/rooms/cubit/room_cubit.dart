@@ -19,6 +19,11 @@ class RoomCubit extends Cubit<RoomState> {
   RoomCubit() : super(RoomInitial());
 
   void roomLoadFileLocal() async {
+    final checkPermission = await _checkPermission(Permission.storage);
+    if (!checkPermission) {
+      openAppSettings();
+      return;
+    }
     final directory = await getExternalStorageDirectory();
     final path = '${directory?.path}/rooms.csv';
     List<RoomModel> roomsMap = [];
@@ -45,8 +50,13 @@ class RoomCubit extends Cubit<RoomState> {
     }
   }
 
-  void roomAdd(String roomCode, String roomPeople, String roomStatus) {
+  void roomAdd(String roomCode, String roomPeople, String roomStatus) async {
     try {
+      final checkPermission = await _checkPermission(Permission.storage);
+      if (!checkPermission) {
+        openAppSettings();
+        return;
+      }
       List<RoomModel> listNew = [...state.listRoom];
       final checkExist =
           listNew.indexWhere((element) => element.room == roomCode);
@@ -93,8 +103,13 @@ class RoomCubit extends Cubit<RoomState> {
     }
   }
 
-  void updateAllRoom(List<InfoModel> listUsers) {
+  void updateAllRoom(List<InfoModel> listUsers) async {
     try {
+      final checkPermission = await _checkPermission(Permission.storage);
+      if (!checkPermission) {
+        openAppSettings();
+        return;
+      }
       List<RoomModel> listRooms = [...state.listRoom];
       if (listRooms.isEmpty || listUsers.isEmpty) {
         return;
@@ -127,11 +142,6 @@ class RoomCubit extends Cubit<RoomState> {
 
   void _writeRoomFile() async {
     try {
-      final checkPermission = await _checkPermission(Permission.storage);
-      if (!checkPermission) {
-        openAppSettings();
-        return;
-      }
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");

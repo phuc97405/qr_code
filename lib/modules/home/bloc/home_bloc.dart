@@ -20,6 +20,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(const HomeState.initial([])) {
     on<HomeLoadData>((event, emit) async {
       try {
+        final checkPermission = await _checkPermission(Permission.camera);
+        if (!checkPermission) {
+          openAppSettings();
+          return;
+        }
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
         List<InfoModel> usersMap = [];
@@ -156,11 +161,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _writeFileCsv() async {
     try {
-      final checkPermission = await _checkPermission(Permission.storage);
-      if (!checkPermission) {
-        openAppSettings();
-        return;
-      }
       List<List<dynamic>> rows = [];
       List<dynamic> row = [];
       row.add("id");
