@@ -20,12 +20,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<DateTime> dateHistory = [];
-  late int indexFilterDate = 0;
   final _scrollController = ScrollController();
+  // final TextEditingController _searchController = TextEditingController();
+  List<DateTime> dateHistory = [];
+  bool isSearch = false;
+  late int indexFilterDate = 0;
+
   late List<String> listRoom =
       context.read<RoomCubit>().state.listRoom.map((e) => e.room).toList();
-  // late final roomList = context.read<RoomBloc>().add(RoomLoadData());
 
   void loadMoreWhenScrollFilter() {
     final List<DateTime> dateNew = List<DateTime>.generate(
@@ -407,12 +409,29 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  List<InfoModel> _getFilteredList(List<InfoModel> listUsers) {
+    List<InfoModel> listNew;
+    print(
+        'searchController: ${context.read<HomeBloc>().state.searchController.text}');
+    listNew = listUsers
+        .where((element) => DateTime.now().isSameDate(
+            DateTime.fromMillisecondsSinceEpoch(int.parse(element.createAt)),
+            dateHistory[indexFilterDate]))
+        .toList();
+    if (context.read<HomeBloc>().state.searchController.text.isEmpty) {
+      return listNew;
+    }
+    return listNew
+        .where((user) => user.name.toLowerCase().contains(
+            context.read<HomeBloc>().state.searchController.text.toLowerCase()))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        centerTitle: true,
         backgroundColor: Colors.black,
         leading: GestureDetector(
             onTap: () => widget.openDrawer(),
@@ -422,23 +441,79 @@ class _HomeScreenState extends State<HomeScreen> {
               size: 30,
             )),
         leadingWidth: 50,
+        centerTitle: true,
+        title: isSearch
+            ? Container(
+                height: 55,
+                padding: const EdgeInsets.only(
+                  left: 8.0,
+                ),
+                child: TextField(
+                  controller: context.read<HomeBloc>().state.searchController,
+                  onChanged: (value) =>
+                      context.read<HomeBloc>().add(HomeSearchNameOfUser(value)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    fillColor: Colors.grey,
+                    filled: true,
+                    hintText: 'Search...',
+                    hintStyle: const TextStyle(color: Colors.white),
+                    suffixIcon: IconButton(
+                      icon: const Icon(
+                        Icons.clear,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => {
+                        context.read<HomeBloc>().state.searchController.clear(),
+                        setState(() {
+                          isSearch = false;
+                        })
+                      },
+                    ),
+                    prefixIcon: IconButton(
+                      icon: const Icon(
+                        Icons.search,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        // Perform the search here
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide:
+                            const BorderSide(color: Colors.white, width: 1)),
+                  ),
+                ),
+              )
+            : const Text(
+                "My Room",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20),
+              ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-                onTap: () {},
-                child: const Icon(
-                  Icons.search,
-                  color: Colors.white,
-                  size: 30,
-                )),
-          ),
+          isSearch
+              ? const SizedBox()
+              : Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          isSearch = true;
+                        });
+                      },
+                      child: const Icon(
+                        Icons.search,
+                        color: Colors.white,
+                        size: 30,
+                      )),
+                ),
         ],
-        title: const Text(
-          "My Room",
-          style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
-        ),
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'scanQr',
@@ -527,32 +602,36 @@ class _HomeScreenState extends State<HomeScreen> {
                       topLeft: Radius.circular(15),
                       topRight: Radius.circular(15))),
               child: BlocBuilder<HomeBloc, HomeState>(
-
-                  // buildWhen: (previous, current) =>
-                  //     previous.dateHistory != previous.dateHistory,
+                  buildWhen: (previous, current) =>
+                      previous.listUsers != previous.listUsers,
                   builder: (context, state) {
-                if (state is HomeAddRoomToUser) {
-                  context.read<RoomCubit>().updateAllRoom(state.listUsers);
-                }
-                return state.listUsers
-                        .where((element) => DateTime.now().isSameDate(
-                            DateTime.fromMillisecondsSinceEpoch(
-                                int.parse(element.createAt)),
-                            dateHistory[indexFilterDate]))
-                        .isEmpty
-                    ? _emptyWidget()
-                    : GridView.count(
-                        padding: const EdgeInsets.all(5),
-                        crossAxisSpacing: 5,
-                        mainAxisSpacing: 5,
-                        crossAxisCount: 2,
-                        children: _infoUser(state.listUsers
-                            .where((element) => DateTime.now().isSameDate(
-                                DateTime.fromMillisecondsSinceEpoch(
-                                    int.parse(element.createAt)),
-                                dateHistory[indexFilterDate]))
-                            .toList()));
-              }),
+                    if (state is HomeAddRoomToUser) {
+                      context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                    }
+                    return _getFilteredList(state.listUsers).isEmpty
+
+                        // state.listUsers
+                        //         .where((element) => DateTime.now().isSameDate(
+                        //             DateTime.fromMillisecondsSinceEpoch(
+                        //                 int.parse(element.createAt)),
+                        //             dateHistory[indexFilterDate]))
+                        //         .isEmpty
+                        ? _emptyWidget()
+                        : GridView.count(
+                            padding: const EdgeInsets.all(5),
+                            crossAxisSpacing: 5,
+                            mainAxisSpacing: 5,
+                            crossAxisCount: 2,
+                            children:
+                                _infoUser(_getFilteredList(state.listUsers))
+                            // _infoUser(state.listUsers
+                            //     .where((element) => DateTime.now().isSameDate(
+                            //         DateTime.fromMillisecondsSinceEpoch(
+                            //             int.parse(element.createAt)),
+                            //         dateHistory[indexFilterDate]))
+                            //     .toList())
+                            );
+                  }),
             )),
           ],
         ),

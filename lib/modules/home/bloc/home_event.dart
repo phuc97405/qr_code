@@ -27,3 +27,9 @@ class HomeAddRoomToUser extends HomeEvent {
 
   const HomeAddRoomToUser(this.id, this.room);
 }
+
+class HomeSearchNameOfUser extends HomeEvent {
+  final String keyword;
+
+  const HomeSearchNameOfUser(this.keyword);
+}

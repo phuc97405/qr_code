@@ -2,13 +2,16 @@ part of 'home_bloc.dart';
 
 class HomeState extends Equatable {
   final List<InfoModel> listUsers;
-  const HomeState._({
+
+  final TextEditingController searchController = TextEditingController();
+
+  HomeState._({
     required this.listUsers,
   });
 
-  const HomeState.initial(this.listUsers);
+  HomeState.initial(this.listUsers);
 
-  const HomeState.setData(List<InfoModel> data)
+  HomeState.setData(List<InfoModel> data)
       : this._(
           listUsers: data,
         );
