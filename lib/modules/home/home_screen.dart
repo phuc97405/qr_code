@@ -82,18 +82,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return true;
   }
 
-  void getDataInitial() async {
-    // ignore: unrelated_type_equality_checks
-    if (Permission.camera.status == PermissionStatus.granted) {
-      // ignore: use_build_context_synchronously
-      context.read<HomeBloc>().add(HomeLoadData());
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    getDataInitial();
+    context.read<HomeBloc>().add(HomeLoadData());
     dateHistory = List<DateTime>.generate(
         30,
         (i) => DateTime.utc(
@@ -194,7 +186,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return showModalBottomSheet(
         context: context,
         builder: (context) {
-          print(user.createAt);
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             width: context.width,
@@ -439,6 +430,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  buildShowDialog(BuildContext context) {
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -620,17 +622,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       topRight: Radius.circular(15))),
               child:
                   BlocBuilder<HomeBloc, HomeState>(builder: (context, state) {
+                print(state.isLoading);
                 if (state is HomeAddRoomToUser) {
-                  context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                  context.read<RoomCubit>().updateAllRoom(state.listUsers!);
                 }
-                return _getFilteredList(state.listUsers).isEmpty
+                if (state.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                return _getFilteredList(state.listUsers!).isEmpty
                     ? _emptyWidget()
                     : GridView.count(
                         padding: const EdgeInsets.all(5),
                         crossAxisSpacing: 5,
                         mainAxisSpacing: 5,
                         crossAxisCount: 2,
-                        children: _infoUser(_getFilteredList(state.listUsers)));
+                        children:
+                            _infoUser(_getFilteredList(state.listUsers!)));
               }),
             )),
           ],

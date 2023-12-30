@@ -42,7 +42,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   Future<bool> _checkPermission(Permission permission) async {
     var status = await permission.request();
-    print(status);
+    // print(status);
     if (status != PermissionStatus.granted) {
       // ignore: use_build_context_synchronously
       showAlertDialog(context);
@@ -51,18 +51,10 @@ class _RoomScreenState extends State<RoomScreen> {
     return true;
   }
 
-  void getDataInitial() async {
-    // ignore: unrelated_type_equality_checks
-    if (Permission.storage.status == PermissionStatus.granted) {
-      // ignore: use_build_context_synchronously
-      context.read<RoomCubit>().roomLoadFileLocal();
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    getDataInitial();
+    context.read<RoomCubit>().roomLoadFileLocal();
   }
 
   Future<void> _dialogCreateRoom(

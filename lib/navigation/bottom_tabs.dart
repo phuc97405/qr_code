@@ -4,11 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/snack_bar.dart';
-import 'package:my_room/modules/home/bloc/home_bloc.dart';
 import 'package:my_room/modules/home/home_screen.dart';
 import 'package:my_room/modules/rooms/rooms_screen.dart';
 import 'package:path_provider/path_provider.dart';
@@ -95,7 +92,6 @@ class _BottomTabsState extends State<BottomTabs> {
       Permission.camera,
       Permission.storage,
     ].request();
-    print(statuses);
     if (statuses[Permission.camera] != PermissionStatus.granted ||
         statuses[Permission.storage] != PermissionStatus.granted) {
       // ignore: use_build_context_synchronously

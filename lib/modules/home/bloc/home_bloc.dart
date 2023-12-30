@@ -10,14 +10,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  HomeBloc() : super(HomeState.initial([])) {
+  HomeBloc() : super(HomeState.initial()) {
     on<HomeLoadData>((event, emit) async {
       try {
+        // ignore: unrelated_type_equality_checks
+        if (await Permission.camera.status != PermissionStatus.granted) return;
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
         List<InfoModel> usersMap = [];
@@ -49,6 +52,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             usersMap,
           ));
         }
+        print('setloading');
       } catch (e) {
         print('HomeLoadData: $e');
       }
@@ -57,7 +61,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // ignore: void_checks
     on<HomeRemoverItem>((event, emit) {
       try {
-        List<InfoModel> listNew = state.listUsers.map((e) => e).toList();
+        List<InfoModel> listNew = state.listUsers!.map((e) => e).toList();
         listNew.removeAt(event.indexItemRemove);
         emit(HomeState.setData(listNew));
         _writeFileCsv();
@@ -69,9 +73,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeScanQR>((event, emit) async {
       try {
         String barcodeScanRes;
-        List<InfoModel> listNew = [...state.listUsers];
+        List<InfoModel> listNew = [...state.listUsers!];
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
+        // emit(HomeState.setLoading(true));
         // ignore: unrelated_type_equality_checks
         if (barcodeScanRes == -1) return;
         final mapList = barcodeScanRes.split('|').toList();
@@ -102,18 +107,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 createAt: DateTime.now().millisecondsSinceEpoch.toString(),
                 updateAt: '',
                 room: ''),
-            ...state.listUsers
+            ...state.listUsers!
           ]));
         }
         _writeFileCsv();
       } catch (e) {
         print('HomeScanQR$e');
+      } finally {
+        // emit(HomeState.setLoading(false));
       }
     });
 
     on<HomeAddRoomToUser>((event, emit) {
       try {
-        List<InfoModel> listNew = [...state.listUsers];
+        List<InfoModel> listNew = [...state.listUsers!];
         final i = listNew.indexWhere((element) => event.id == element.id);
         listNew[i].room = event.room;
         _writeFileCsv();
@@ -148,19 +155,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       row.add("updateAt");
       row.add("room");
       rows.add(row);
-      for (int i = 0; i < state.listUsers.length; i++) {
+      for (int i = 0; i < state.listUsers!.length; i++) {
         List<dynamic> row = [];
-        row.add(state.listUsers[i].id);
-        row.add(state.listUsers[i].cccd);
-        row.add(state.listUsers[i].name);
-        row.add(state.listUsers[i].birthDay);
-        row.add(state.listUsers[i].gender);
-        row.add(state.listUsers[i].address);
-        row.add(state.listUsers[i].createdDate);
-        row.add(state.listUsers[i].createAt);
-        row.add(state.listUsers[i].isCheckIn);
-        row.add(state.listUsers[i].updateAt);
-        row.add(state.listUsers[i].room);
+        row.add(state.listUsers?[i].id);
+        row.add(state.listUsers?[i].cccd);
+        row.add(state.listUsers?[i].name);
+        row.add(state.listUsers?[i].birthDay);
+        row.add(state.listUsers?[i].gender);
+        row.add(state.listUsers?[i].address);
+        row.add(state.listUsers?[i].createdDate);
+        row.add(state.listUsers?[i].createAt);
+        row.add(state.listUsers?[i].isCheckIn);
+        row.add(state.listUsers?[i].updateAt);
+        row.add(state.listUsers?[i].room);
         rows.add(row);
       }
       String csv = const ListToCsvConverter().convert(rows);

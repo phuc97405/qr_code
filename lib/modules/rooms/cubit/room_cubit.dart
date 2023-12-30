@@ -11,6 +11,7 @@ import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
 import 'package:my_room/models/room_model.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 part 'room_state.dart';
 
@@ -18,6 +19,7 @@ class RoomCubit extends Cubit<RoomState> {
   RoomCubit() : super(RoomInitial());
 
   void roomLoadFileLocal() async {
+    if (await Permission.storage.status != PermissionStatus.granted) return;
     final directory = await getExternalStorageDirectory();
     final path = '${directory?.path}/rooms.csv';
     List<RoomModel> roomsMap = [];
