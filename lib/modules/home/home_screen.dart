@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/components/base_widgets.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
@@ -21,9 +24,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
-  // final TextEditingController _searchController = TextEditingController();
   List<DateTime> dateHistory = [];
   bool isSearch = false;
+  String textSearch = '';
+  Timer? _debounce;
   late int indexFilterDate = 0;
 
   late List<String> listRoom =
@@ -40,6 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       dateHistory.addAll(dateNew);
     });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   void showAlertDialog(context) => showCupertinoDialog<void>(
@@ -204,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icons.timelapse_sharp,
                           DateTime.now()
                               .aboutHour(user.updateAt, user.createAt),
-                          // '${(DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(int.parse(user.createAt))).inMinutes / 60).toStringAsFixed(1)}H',
                           'Timer'),
                       viewButton(Icons.numbers,
                           user.room.isEmpty ? '---' : user.room, 'Room'),
@@ -255,10 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       BaseWidgets.instance.rowInfo('CheckIn: ',
                           DateTime.now().toDateFormat(user.createAt)),
-                      // DateFormat('hh:mm dd/MM/yyyy').format(
-                      //     DateTime.fromMillisecondsSinceEpoch(
-                      //         int.parse(user.createAt)))
-                      // ),
+
                       const SizedBox(
                         height: 5,
                       ),
@@ -410,10 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<InfoModel> _getFilteredList(List<InfoModel> listUsers) {
-    List<InfoModel> listNew;
-    print(
-        'searchController: ${context.read<HomeBloc>().state.searchController.text}');
-    listNew = listUsers
+    List<InfoModel> listNew = listUsers
         .where((element) => DateTime.now().isSameDate(
             DateTime.fromMillisecondsSinceEpoch(int.parse(element.createAt)),
             dateHistory[indexFilterDate]))
@@ -425,6 +428,15 @@ class _HomeScreenState extends State<HomeScreen> {
         .where((user) => user.name.toLowerCase().contains(
             context.read<HomeBloc>().state.searchController.text.toLowerCase()))
         .toList();
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      setState(() {
+        textSearch = query;
+      });
+    });
   }
 
   @override
@@ -449,9 +461,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   left: 8.0,
                 ),
                 child: TextField(
+                  autofocus: true,
                   controller: context.read<HomeBloc>().state.searchController,
-                  onChanged: (value) =>
-                      context.read<HomeBloc>().add(HomeSearchNameOfUser(value)),
+                  onChanged: _onSearchChanged,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -467,10 +479,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.white,
                       ),
                       onPressed: () => {
-                        context.read<HomeBloc>().state.searchController.clear(),
                         setState(() {
                           isSearch = false;
-                        })
+                        }),
+                        context.read<HomeBloc>().state.searchController.clear(),
                       },
                     ),
                     prefixIcon: IconButton(
@@ -523,7 +535,6 @@ class _HomeScreenState extends State<HomeScreen> {
             // ignore: use_build_context_synchronously
             context.read<HomeBloc>().add(const HomeScanQR());
           }
-          ;
         },
         // _scanQRNormal,
         backgroundColor: Colors.white,
@@ -571,10 +582,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       Text(
                                         '${DateTime.parse(dateHistory[index].toString()).day}',
                                         style: const TextStyle(
-                                            color: Colors.white,
                                             fontSize: 22,
                                             fontWeight: FontWeight.w500),
-                                      ),
+                                      )
+                                          .animate()
+                                          .tint(color: Colors.white)
+                                          .then()
+                                          .shake(),
                                       Text(
                                         WeekdayE
                                             .values[DateTime.parse(
@@ -584,10 +598,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 1]
                                             .name,
                                         style: const TextStyle(
-                                            color: Colors.white,
                                             fontSize: 15,
                                             fontWeight: FontWeight.w500),
                                       )
+                                          .animate()
+                                          .tint(color: Colors.white)
+                                          .then()
+                                          .shake(),
                                     ],
                                   )),
                             )).toList()),
@@ -601,37 +618,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(15),
                       topRight: Radius.circular(15))),
-              child: BlocBuilder<HomeBloc, HomeState>(
-                  buildWhen: (previous, current) =>
-                      previous.listUsers != previous.listUsers,
-                  builder: (context, state) {
-                    if (state is HomeAddRoomToUser) {
-                      context.read<RoomCubit>().updateAllRoom(state.listUsers);
-                    }
-                    return _getFilteredList(state.listUsers).isEmpty
-
-                        // state.listUsers
-                        //         .where((element) => DateTime.now().isSameDate(
-                        //             DateTime.fromMillisecondsSinceEpoch(
-                        //                 int.parse(element.createAt)),
-                        //             dateHistory[indexFilterDate]))
-                        //         .isEmpty
-                        ? _emptyWidget()
-                        : GridView.count(
-                            padding: const EdgeInsets.all(5),
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
-                            crossAxisCount: 2,
-                            children:
-                                _infoUser(_getFilteredList(state.listUsers))
-                            // _infoUser(state.listUsers
-                            //     .where((element) => DateTime.now().isSameDate(
-                            //         DateTime.fromMillisecondsSinceEpoch(
-                            //             int.parse(element.createAt)),
-                            //         dateHistory[indexFilterDate]))
-                            //     .toList())
-                            );
-                  }),
+              child:
+                  BlocBuilder<HomeBloc, HomeState>(builder: (context, state) {
+                if (state is HomeAddRoomToUser) {
+                  context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                }
+                return _getFilteredList(state.listUsers).isEmpty
+                    ? _emptyWidget()
+                    : GridView.count(
+                        padding: const EdgeInsets.all(5),
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                        crossAxisCount: 2,
+                        children: _infoUser(_getFilteredList(state.listUsers)));
+              }),
             )),
           ],
         ),

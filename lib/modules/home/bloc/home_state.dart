@@ -4,6 +4,7 @@ class HomeState extends Equatable {
   final List<InfoModel> listUsers;
 
   final TextEditingController searchController = TextEditingController();
+  final int indexFilterDate = 0;
 
   HomeState._({
     required this.listUsers,

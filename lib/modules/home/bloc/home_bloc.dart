@@ -129,7 +129,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     //         .distinct()
     //         .switchMap(mapper));
 
-    on<HomeSearchNameOfUser>((event, emit) {});
+    // on<HomeSearchNameOfUser>((event, emit) {});
   }
 
   void _writeFileCsv() async {

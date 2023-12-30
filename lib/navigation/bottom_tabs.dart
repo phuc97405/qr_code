@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_room/components/snack_bar.dart';
@@ -119,77 +120,78 @@ class _BottomTabsState extends State<BottomTabs> {
         drawer: Drawer(
           elevation: 16,
           child: Column(
-            // padding: const EdgeInsets.all(0.0),
-            children: <Widget>[
-              UserAccountsDrawerHeader(
-                accountName: const Text("My Room"),
-                currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Image.asset(
-                    'lib/images/logo.png',
-                    height: 200,
-                    width: 200,
-                    fit: BoxFit.contain,
+              // padding: const EdgeInsets.all(0.0),
+              children: <Widget>[
+                UserAccountsDrawerHeader(
+                  accountName: const Text("My Room"),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Image.asset(
+                      'lib/images/logo.png',
+                      height: 200,
+                      width: 200,
+                      fit: BoxFit.contain,
+                    ),
                   ),
+                  accountEmail: null,
                 ),
-                accountEmail: null,
+                ListTile(
+                  onTap: scaffoldKey.currentState?.closeDrawer,
+                  title: const Text("Home"),
+                  trailing: const Icon(Icons.home),
+                ),
+                const Divider(),
+                ListTile(
+                  title: const Text("Setting Room Price(Update)"),
+                  trailing: const Icon(Icons.price_change),
+                  onTap: () => {},
+                ),
+                const Divider(),
+                ListTile(
+                    title: const Text("Share Files"),
+                    trailing: const Icon(Icons.share),
+                    onTap: () {
+                      scaffoldKey.currentState?.closeDrawer();
+                      _shareFile();
+                    }),
+                const Divider(),
+                ListTile(
+                    title: const Text("Save File To Download"),
+                    trailing: const Icon(Icons.save),
+                    onTap: () {
+                      scaffoldKey.currentState?.closeDrawer();
+                      _saveFileToDownload();
+                    }),
+                const Divider(),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    InkWell(
+                        onTap: _launchURL,
+                        child: Image.asset(
+                          'lib/images/fb.png',
+                          width: 40,
+                          height: 40,
+                        )),
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    InkWell(
+                        onTap: _launchTel,
+                        child: Image.asset(
+                          'lib/images/call.png',
+                          width: 40,
+                          height: 40,
+                        )),
+                  ],
+                ),
+                const SizedBox(
+                  height: 10,
+                )
+              ]
+              // .animate(interval: .250.seconds).slideX(),
               ),
-              ListTile(
-                onTap: scaffoldKey.currentState?.closeDrawer,
-                title: const Text("Home"),
-                trailing: const Icon(Icons.home),
-              ),
-              const Divider(),
-              ListTile(
-                title: const Text("Setting Room Price(Update)"),
-                trailing: const Icon(Icons.price_change),
-                onTap: () => {},
-              ),
-              const Divider(),
-              ListTile(
-                  title: const Text("Share Files"),
-                  trailing: const Icon(Icons.share),
-                  onTap: () {
-                    scaffoldKey.currentState?.closeDrawer();
-                    _shareFile();
-                  }),
-              const Divider(),
-              ListTile(
-                  title: const Text("Save File To Download"),
-                  trailing: const Icon(Icons.save),
-                  onTap: () {
-                    scaffoldKey.currentState?.closeDrawer();
-                    _saveFileToDownload();
-                  }),
-              const Divider(),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  InkWell(
-                      onTap: _launchURL,
-                      child: Image.asset(
-                        'lib/images/fb.png',
-                        width: 40,
-                        height: 40,
-                      )),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  InkWell(
-                      onTap: _launchTel,
-                      child: Image.asset(
-                        'lib/images/call.png',
-                        width: 40,
-                        height: 40,
-                      )),
-                ],
-              ),
-              const SizedBox(
-                height: 10,
-              )
-            ],
-          ),
         ),
         bottomNavigationBar: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
