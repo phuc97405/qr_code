@@ -21,6 +21,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       try {
         // ignore: unrelated_type_equality_checks
         if (await Permission.camera.status != PermissionStatus.granted) return;
+        emit(HomeState.setLoading(true));
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
         List<InfoModel> usersMap = [];
@@ -52,7 +53,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             usersMap,
           ));
         }
-        print('setloading');
+        // emit(HomeState.setLoading(false));
+        print('set loading');
       } catch (e) {
         print('HomeLoadData: $e');
       }

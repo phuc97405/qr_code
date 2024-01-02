@@ -259,8 +259,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(
                         height: 5,
                       ),
-                      BaseWidgets.instance.rowInfo('CheckOut: ',
-                          user.updateAt.isNotEmpty ? user.updateAt : '---'),
+                      BaseWidgets.instance.rowInfo(
+                          'CheckOut: ',
+                          user.updateAt.isNotEmpty
+                              ? DateTime.now().toDateFormat(user.updateAt)
+                              : '---'),
                       const SizedBox(
                         height: 5,
                       ),
