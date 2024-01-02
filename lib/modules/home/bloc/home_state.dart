@@ -1,7 +1,7 @@
 part of 'home_bloc.dart';
 
 class HomeState extends Equatable {
-  final List<InfoModel>? listUsers;
+  final List<InfoModel> listUsers;
   final TextEditingController searchController = TextEditingController();
   int indexFilterDate;
   bool isLoading;
@@ -24,7 +24,7 @@ class HomeState extends Equatable {
   HomeState.setData(List<InfoModel> data)
       : this._(listUsers: data, isLoading: false);
 
-  HomeState.setLoading(bool value) : this._(isLoading: false);
+  HomeState.setLoading(bool value) : this._(isLoading: value);
 
   @override
   bool operator ==(covariant HomeState other) => other.listUsers == listUsers;
@@ -33,5 +33,5 @@ class HomeState extends Equatable {
   int get hashCode => super.hashCode;
 
   @override
-  List<Object?> get props => [listUsers, isLoading, indexFilterDate];
+  List<Object> get props => [listUsers, isLoading, indexFilterDate];
 }

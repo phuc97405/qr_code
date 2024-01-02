@@ -281,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return List.generate(
         users.length,
         (index) => GestureDetector(
-              onLongPress: () => _dialogDelete(context, index),
+              // onLongPress: () => _dialogDelete(context, index),
               onTap: () {
                 showBottomSheet(users[index]);
               },

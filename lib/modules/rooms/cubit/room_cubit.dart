@@ -16,7 +16,7 @@ import 'package:permission_handler/permission_handler.dart';
 part 'room_state.dart';
 
 class RoomCubit extends Cubit<RoomState> {
-  RoomCubit() : super(RoomInitial());
+  RoomCubit() : super(RoomState());
 
   void roomLoadFileLocal() async {
     if (await Permission.storage.status != PermissionStatus.granted) return;
@@ -48,6 +48,7 @@ class RoomCubit extends Cubit<RoomState> {
 
   void roomAdd(String roomCode, String roomPeople, String roomStatus) async {
     try {
+      emit(state.copyWith(isLoading: true));
       List<RoomModel> listNew = [...state.listRoom];
       final checkExist =
           listNew.indexWhere((element) => element.room == roomCode);
@@ -69,14 +70,24 @@ class RoomCubit extends Cubit<RoomState> {
       // emit(RoomState.errorAdd(listNew, 'user is exist'));
     } catch (e) {
       print(e);
+    } finally {
+      emit(state.copyWith(isLoading: false));
     }
   }
 
   void roomRemove(int index) {
-    List<RoomModel> listNew = [...state.listRoom];
-    listNew.removeAt(index);
-    emit(RoomState(listRoom: listNew));
-    _writeRoomFile();
+    try {
+      emit(state.copyWith(isLoading: true));
+      Future.delayed(Duration(seconds: 2));
+      List<RoomModel> listNew = [...state.listRoom];
+      listNew.removeAt(index);
+      emit(RoomState(listRoom: listNew));
+      _writeRoomFile();
+    } catch (e) {
+      print(e);
+    } finally {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
   void roomUpdate(String timer, String name, String status, String room) {

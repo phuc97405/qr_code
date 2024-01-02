@@ -119,7 +119,8 @@ class _BottomTabsState extends State<BottomTabs> {
               // padding: const EdgeInsets.all(0.0),
               children: <Widget>[
                 UserAccountsDrawerHeader(
-                  accountName: const Text("My Room"),
+                  accountName:
+                      Text(currentPageIndex == 0 ? "My Users" : "My Room"),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
                     child: Image.asset(
