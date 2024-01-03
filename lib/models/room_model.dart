@@ -1,4 +1,6 @@
-class RoomModel {
+import 'package:equatable/equatable.dart';
+
+final class RoomModel extends Equatable {
   String id;
   String status;
   String timer;
@@ -13,4 +15,7 @@ class RoomModel {
       required this.room,
       required this.status,
       required this.timer});
+
+  @override
+  List<Object> get props => [id, name, people, room, status, timer];
 }

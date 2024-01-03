@@ -588,12 +588,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                         '${DateTime.parse(dateHistory[index].toString()).day}',
                                         style: const TextStyle(
                                             fontSize: 22,
+                                            color: Colors.white,
                                             fontWeight: FontWeight.w500),
-                                      )
-                                          .animate()
-                                          .tint(color: Colors.white)
-                                          .then()
-                                          .shake(),
+                                      ),
+                                      // .animate()
+                                      // .tint(color: Colors.white)
+                                      // .then()
+                                      // .shake(),
                                       Text(
                                         WeekdayE
                                             .values[DateTime.parse(
@@ -625,24 +626,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       topRight: Radius.circular(15))),
               child:
                   BlocBuilder<HomeBloc, HomeState>(builder: (context, state) {
-                print(state.isLoading);
                 if (state is HomeAddRoomToUser) {
-                  context.read<RoomCubit>().updateAllRoom(state.listUsers!);
+                  context.read<RoomCubit>().updateAllRoom(state.listUsers);
                 }
-                if (state.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                switch (state.status) {
+                  case HomeStatus.loading:
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  case HomeStatus.success:
+                    return _getFilteredList(state.listUsers).isEmpty
+                        ? _emptyWidget()
+                        : GridView.count(
+                            padding: const EdgeInsets.all(5),
+                            crossAxisSpacing: 5,
+                            mainAxisSpacing: 5,
+                            crossAxisCount: 2,
+                            children:
+                                _infoUser(_getFilteredList(state.listUsers)));
+                  default:
+                    return _emptyWidget();
                 }
-                return _getFilteredList(state.listUsers!).isEmpty
-                    ? _emptyWidget()
-                    : GridView.count(
-                        padding: const EdgeInsets.all(5),
-                        crossAxisSpacing: 5,
-                        mainAxisSpacing: 5,
-                        crossAxisCount: 2,
-                        children:
-                            _infoUser(_getFilteredList(state.listUsers!)));
               }),
             )),
           ],

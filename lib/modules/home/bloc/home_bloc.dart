@@ -19,8 +19,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeState.initial()) {
     on<HomeLoadData>((event, emit) async {
       try {
+        print(state.toString());
         // ignore: unrelated_type_equality_checks
         if (await Permission.camera.status != PermissionStatus.granted) return;
+        emit(state.copyWith(status: HomeStatus.loading));
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
         List<InfoModel> usersMap = [];
@@ -48,23 +50,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               room: '${element[10]}',
             ));
           }
-          emit(HomeState.setData(usersMap));
+          // emit(HomeState.setData(usersMap));
+          emit(state.copyWith(listUsers: usersMap, status: HomeStatus.success));
+        } else {
+          emit(state.copyWith(status: HomeStatus.success));
         }
       } catch (e) {
+        emit(state.copyWith(status: HomeStatus.failure));
         print('HomeLoadData: $e');
-      } finally {
-        emit(state.copyWith(isLoading: false));
       }
     });
 
     // ignore: void_checks
     on<HomeRemoverItem>((event, emit) {
       try {
+        emit(state.copyWith(status: HomeStatus.loading));
         List<InfoModel> listNew = state.listUsers.map((e) => e).toList();
         listNew.removeAt(event.indexItemRemove);
-        emit(HomeState.setData(listNew));
+        emit(state.copyWith(listUsers: listNew, status: HomeStatus.success));
+        // emit(HomeState.setData(listNew));
         _writeFileCsv();
       } catch (e) {
+        emit(state.copyWith(status: HomeStatus.failure));
         print('HomeRemoverItem$e');
       }
     });
@@ -75,8 +82,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         List<InfoModel> listNew = [...state.listUsers];
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
-
-        emit(state.copyWith(isLoading: true));
+        emit(state.copyWith(status: HomeStatus.loading));
         // ignore: unrelated_type_equality_checks
         if (barcodeScanRes == -1) return;
         final mapList = barcodeScanRes.split('|').toList();
@@ -92,9 +98,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           listNew[indexExist].isCheckIn = !listNew[indexExist].isCheckIn;
           listNew[indexExist].updateAt =
               DateTime.now().millisecondsSinceEpoch.toString();
-          emit(HomeState.setData(listNew));
+          // emit(HomeState.setData(listNew));
+          emit(state.copyWith(listUsers: listNew, status: HomeStatus.success));
         } else {
-          emit(HomeState.setData([
+          emit(state.copyWith(listUsers: [
             InfoModel(
                 isCheckIn: true,
                 id: '${UniqueKey().hashCode}',
@@ -108,35 +115,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 updateAt: '',
                 room: ''),
             ...state.listUsers
-          ]));
+          ], status: HomeStatus.success));
         }
         _writeFileCsv();
       } catch (e) {
+        emit(state.copyWith(status: HomeStatus.failure));
         print('HomeScanQR$e');
-      } finally {
-        emit(state.copyWith(isLoading: false));
       }
     });
 
     on<HomeAddRoomToUser>((event, emit) {
       try {
+        emit(state.copyWith(status: HomeStatus.loading));
         List<InfoModel> listNew = [...state.listUsers];
         final i = listNew.indexWhere((element) => event.id == element.id);
         listNew[i].room = event.room;
         _writeFileCsv();
-        emit(HomeState.setData(listNew));
+        // emit(HomeState.setData(listNew));
+        emit(state.copyWith(listUsers: listNew, status: HomeStatus.success));
       } catch (e) {
+        emit(state.copyWith(status: HomeStatus.failure));
         print('HomeAddRoomToUser$e');
       }
     });
-
-    // on<HomeSearchNameOfUser>((event, emit) => search(emit, event),
-    //     transformer: (eventsStream, mapper) => eventsStream
-    //         .debounceTime(const Duration(milliseconds: 200))
-    //         .distinct()
-    //         .switchMap(mapper));
-
-    // on<HomeSearchNameOfUser>((event, emit) {});
   }
 
   void _writeFileCsv() async {
@@ -155,7 +156,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       row.add("updateAt");
       row.add("room");
       rows.add(row);
-      for (int i = 0; i < state.listUsers!.length; i++) {
+      for (int i = 0; i < state.listUsers.length; i++) {
         List<dynamic> row = [];
         row.add(state.listUsers[i].id);
         row.add(state.listUsers[i].cccd);

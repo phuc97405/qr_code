@@ -16,33 +16,41 @@ import 'package:permission_handler/permission_handler.dart';
 part 'room_state.dart';
 
 class RoomCubit extends Cubit<RoomState> {
-  RoomCubit() : super(RoomState());
+  RoomCubit() : super(RoomState.initial());
 
   void roomLoadFileLocal() async {
-    if (await Permission.storage.status != PermissionStatus.granted) return;
-    final directory = await getExternalStorageDirectory();
-    final path = '${directory?.path}/rooms.csv';
-    List<RoomModel> roomsMap = [];
-    final checkPathExistence = await File(path).exists();
-    if (!checkPathExistence) return;
-    final input = File(path).openRead();
-    List mapList = await input
-        .transform(utf8.decoder)
-        .transform(const CsvToListConverter())
-        .toList();
-    mapList.removeAt(0); //remove row properties key
-    if (mapList.isNotEmpty) {
-      mapList.forEach((element) {
-        roomsMap.add(RoomModel(
-          id: '${element[0]}',
-          status: '${element[1]}',
-          timer: '${element[2]}',
-          room: '${element[3]}',
-          name: '${element[4]}',
-          people: '${element[5]}',
-        ));
-      });
-      emit(RoomState(listRoom: roomsMap));
+    try {
+      if (await Permission.storage.status != PermissionStatus.granted) return;
+      final directory = await getExternalStorageDirectory();
+      final path = '${directory?.path}/rooms.csv';
+      List<RoomModel> roomsMap = [];
+      final checkPathExistence = await File(path).exists();
+      if (!checkPathExistence) return;
+      final input = File(path).openRead();
+      List mapList = await input
+          .transform(utf8.decoder)
+          .transform(const CsvToListConverter())
+          .toList();
+      mapList.removeAt(0); //remove row properties key
+      if (mapList.isNotEmpty) {
+        mapList.forEach((element) {
+          roomsMap.add(RoomModel(
+            id: '${element[0]}',
+            status: '${element[1]}',
+            timer: '${element[2]}',
+            room: '${element[3]}',
+            name: '${element[4]}',
+            people: '${element[5]}',
+          ));
+        });
+        // emit(RoomState(listRoom: roomsMap));
+        emit(state.copyWith(listRoom: roomsMap, isLoading: false));
+      } else {
+        emit(state.copyWith(isLoading: false));
+      }
+    } catch (e) {
+      emit(state.copyWith(isLoading: false));
+      print(e);
     }
   }
 
@@ -61,72 +69,87 @@ class RoomCubit extends Cubit<RoomState> {
           name: '',
           people: roomPeople,
         ));
-
-        emit(RoomState(listRoom: listNew));
+        emit(state.copyWith(listRoom: listNew, isLoading: false));
+        // emit(RoomState(listRoom: listNew));
         _writeRoomFile();
       } else {
         print('user is existing');
+        emit(state.copyWith(isLoading: false));
       }
-      // emit(RoomState.errorAdd(listNew, 'user is exist'));
     } catch (e) {
-      print(e);
-    } finally {
       emit(state.copyWith(isLoading: false));
+      print(e);
     }
   }
 
   void roomRemove(int index) {
     try {
-      emit(state.copyWith(isLoading: true));
+      // emit(state.copyWith(isLoading: true));
       Future.delayed(Duration(seconds: 2));
       List<RoomModel> listNew = [...state.listRoom];
       listNew.removeAt(index);
-      emit(RoomState(listRoom: listNew));
+      // emit(RoomState(listRoom: listNew));
+      emit(state.copyWith(
+        listRoom: listNew,
+      ));
       _writeRoomFile();
     } catch (e) {
       print(e);
-    } finally {
-      emit(state.copyWith(isLoading: false));
     }
   }
 
   void roomUpdate(String timer, String name, String status, String room) {
     try {
+      emit(state.copyWith(isLoading: true));
       List<RoomModel> listNew = [...state.listRoom];
       final checkIndex = listNew.indexWhere((element) => element.room == room);
       listNew[checkIndex].name = name;
       listNew[checkIndex].status = status;
       listNew[checkIndex].timer = timer;
-      emit(RoomState(listRoom: listNew));
+      // emit(RoomState(listRoom: listNew));
+      emit(state.copyWith(listRoom: listNew, isLoading: false));
       _writeRoomFile();
     } catch (e) {
+      emit(state.copyWith(isLoading: false));
       print('RoomUpdate$e');
     }
   }
 
   void updateAllRoom(List<InfoModel> listUsers) async {
     try {
+      print('updtaining all');
+      emit(state.copyWith(isLoading: true));
       List<RoomModel> listRooms = [...state.listRoom];
       if (listRooms.isEmpty || listUsers.isEmpty) {
         return;
       }
       for (var user in listUsers) {
-        var indexRoom = listRooms.indexWhere((e) => user.room == e.room);
+        var userStatus =
+            user.isCheckIn ? roomStatusE.In.name : roomStatusE.Out.name;
+        var indexRoom = listRooms.indexWhere(
+            // ignore: unrelated_type_equality_checks
+            (e) =>
+                user.room == e.room &&
+                // e.status == userStatus &&
+                e.status !=
+                    roomStatusE.Out.name); //need update item room != out
         if (indexRoom != -1) {
           listRooms[indexRoom].name = user.name;
-          listRooms[indexRoom].status =
-              user.isCheckIn ? roomStatusE.In.name : roomStatusE.Out.name;
+          listRooms[indexRoom].status = userStatus;
           listRooms[indexRoom].timer = DateTime.now()
               .aboutHour(user.updateAt, user.createAt); // checkin to checkout
         } else {
-          listRooms[indexRoom].status = roomStatusE.Available.name;
-          listRooms[indexRoom].name = '';
-          listRooms[indexRoom].timer = '';
+          print('else');
+          // listRooms[indexRoom].status = roomStatusE.Available.name;
+          // listRooms[indexRoom].name = '';
+          // listRooms[indexRoom].timer = '';
         }
       }
-      emit(RoomState(listRoom: listRooms));
+      // emit(RoomState(listRoom: listRooms));
+      emit(state.copyWith(listRoom: listRooms, isLoading: false));
       _writeRoomFile();
     } catch (e) {
+      emit(state.copyWith(isLoading: false));
       print('updateAllRoom$e');
     }
   }

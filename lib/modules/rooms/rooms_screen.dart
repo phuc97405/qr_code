@@ -331,12 +331,17 @@ class _RoomScreenState extends State<RoomScreen> {
           ),
         ),
         body: BlocBuilder<RoomCubit, RoomState>(builder: (context, state) {
-          return GridView.count(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-              crossAxisSpacing: 5,
-              mainAxisSpacing: 5,
-              crossAxisCount: 2,
-              children: renderItemRooms(state.listRoom));
+          if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else {
+            return GridView.count(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                crossAxisSpacing: 5,
+                mainAxisSpacing: 5,
+                crossAxisCount: 2,
+                children: renderItemRooms(state.listRoom));
+          }
         }));
   }
 }

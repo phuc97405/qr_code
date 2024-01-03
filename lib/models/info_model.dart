@@ -1,4 +1,6 @@
-class InfoModel {
+import 'package:equatable/equatable.dart';
+
+final class InfoModel extends Equatable {
   String id;
   String cccd;
   String name;
@@ -22,4 +24,19 @@ class InfoModel {
       required this.gender,
       required this.updateAt,
       required this.room});
+
+  @override
+  List<Object> get props => [
+        id,
+        cccd,
+        name,
+        birthDay,
+        gender,
+        address,
+        createdDate,
+        createAt,
+        isCheckIn,
+        updateAt,
+        room
+      ];
 }
