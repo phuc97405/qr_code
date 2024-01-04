@@ -19,10 +19,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeState.initial()) {
     on<HomeLoadData>((event, emit) async {
       try {
-        print(state.toString());
+        print('load');
         // ignore: unrelated_type_equality_checks
-        if (await Permission.camera.status != PermissionStatus.granted) return;
         emit(state.copyWith(status: HomeStatus.loading));
+        if (await Permission.storage.status != PermissionStatus.granted) return;
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
         List<InfoModel> usersMap = [];
@@ -52,12 +52,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           }
           // emit(HomeState.setData(usersMap));
           emit(state.copyWith(listUsers: usersMap, status: HomeStatus.success));
-        } else {
-          emit(state.copyWith(status: HomeStatus.success));
         }
       } catch (e) {
         emit(state.copyWith(status: HomeStatus.failure));
         print('HomeLoadData: $e');
+      } finally {
+        emit(state.copyWith(status: HomeStatus.success));
       }
     });
 
@@ -121,6 +121,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       } catch (e) {
         emit(state.copyWith(status: HomeStatus.failure));
         print('HomeScanQR$e');
+      } finally {
+        emit(state.copyWith(status: HomeStatus.success));
       }
     });
 

@@ -51,6 +51,17 @@ class _RoomScreenState extends State<RoomScreen> {
     return true;
   }
 
+  Widget _emptyRoom() {
+    return Center(
+      child: Image.asset(
+        'lib/images/room.png',
+        width: 300,
+        height: 250,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -334,13 +345,15 @@ class _RoomScreenState extends State<RoomScreen> {
           if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           } else {
-            return GridView.count(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                crossAxisSpacing: 5,
-                mainAxisSpacing: 5,
-                crossAxisCount: 2,
-                children: renderItemRooms(state.listRoom));
+            return state.listRoom.isEmpty
+                ? _emptyRoom()
+                : GridView.count(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 10),
+                    crossAxisSpacing: 5,
+                    mainAxisSpacing: 5,
+                    crossAxisCount: 2,
+                    children: renderItemRooms(state.listRoom));
           }
         }));
   }

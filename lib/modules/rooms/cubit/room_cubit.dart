@@ -45,12 +45,11 @@ class RoomCubit extends Cubit<RoomState> {
         });
         // emit(RoomState(listRoom: roomsMap));
         emit(state.copyWith(listRoom: roomsMap, isLoading: false));
-      } else {
-        emit(state.copyWith(isLoading: false));
       }
     } catch (e) {
-      emit(state.copyWith(isLoading: false));
       print(e);
+    } finally {
+      emit(state.copyWith(isLoading: false));
     }
   }
 
@@ -85,7 +84,6 @@ class RoomCubit extends Cubit<RoomState> {
   void roomRemove(int index) {
     try {
       // emit(state.copyWith(isLoading: true));
-      Future.delayed(Duration(seconds: 2));
       List<RoomModel> listNew = [...state.listRoom];
       listNew.removeAt(index);
       // emit(RoomState(listRoom: listNew));

@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -88,17 +89,18 @@ class _BottomTabsState extends State<BottomTabs> {
         ),
       );
   Future<bool> _checkPermission() async {
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.camera,
-      Permission.storage,
-    ].request();
-    if (statuses[Permission.camera] != PermissionStatus.granted ||
-        statuses[Permission.storage] != PermissionStatus.granted) {
+    Map<Permission, PermissionStatus> statuses =
+        await [Permission.camera, Permission.storage].request();
+
+    if (statuses[Permission.camera] == PermissionStatus.granted &&
+        statuses[Permission.storage] == PermissionStatus.granted) {
+      return true;
+    } else {
+      print(false);
       // ignore: use_build_context_synchronously
       showAlertDialog(context);
       return false;
     }
-    return true;
   }
 
   @override

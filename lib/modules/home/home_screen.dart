@@ -626,9 +626,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       topRight: Radius.circular(15))),
               child:
                   BlocBuilder<HomeBloc, HomeState>(builder: (context, state) {
-                if (state is HomeAddRoomToUser) {
-                  context.read<RoomCubit>().updateAllRoom(state.listUsers);
-                }
+                // if (state.status == HomeStatus.success) {
+                //   print('success add');
+                //   List<InfoModel> listSort = state.listUsers
+                //       .where((e) => e.room.isNotEmpty && e.updateAt.isNotEmpty)
+                //       .toList();
+                //   if (listSort.isNotEmpty) {
+                //     listSort.sort((a, b) => a.updateAt.compareTo(b.updateAt));
+                //   }
+                //   print(listSort.last.updateAt);
+                // context.read<RoomCubit>().roomUpdate(
+                //     '',
+                //     users[index].name,
+                //     users[index].isCheckIn
+                //         ? roomStatusE.In.name
+                //         : roomStatusE.Out.name,
+                //     room);
+                // context.read<RoomCubit>().updateAllRoom(state.listUsers);
+                // }
                 switch (state.status) {
                   case HomeStatus.loading:
                     return const Center(

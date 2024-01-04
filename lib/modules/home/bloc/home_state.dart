@@ -13,7 +13,7 @@ final class HomeState extends Equatable {
   final List<InfoModel> listUsers;
   final HomeStatus status;
   final TextEditingController searchController = TextEditingController();
-  int indexFilterDate;
+  final int indexFilterDate;
   // bool isLoading;
 
   HomeState._(
@@ -31,14 +31,10 @@ final class HomeState extends Equatable {
       status: status ?? this.status,
       listUsers: listUsers ?? this.listUsers,
       indexFilterDate: indexFilterDate ?? this.indexFilterDate,
-      // isLoading: isLoading ?? this.isLoading
     );
   }
 
   HomeState.initial() : this._();
-
-  // HomeState.setData(List<InfoModel> data)
-  //     : this._(listUsers: data, isLoading: false);
 
   @override
   String toString() {
