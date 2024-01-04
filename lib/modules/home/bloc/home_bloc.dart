@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,8 @@ import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/extensions/date_extensions.dart';
 import 'package:my_room/models/info_model.dart';
+import 'package:my_room/services/api_provider.dart';
+import 'package:my_room/services/repository.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -17,9 +20,10 @@ part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeState.initial()) {
+    MyApiProvide myApiProvide = MyApiProvide();
+    Repository response = Repository(myApiProvide);
     on<HomeLoadData>((event, emit) async {
       try {
-        print('load');
         // ignore: unrelated_type_equality_checks
         emit(state.copyWith(status: HomeStatus.loading));
         if (await Permission.storage.status != PermissionStatus.granted) return;
@@ -104,6 +108,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                   : HomeStatus.success,
               indexRoomCheckout:
                   listNew[indexExist].room.isNotEmpty ? indexExist : -1));
+          await response.pushDataToAppTelegram(
+              'Update user: ${listNew[indexExist].toString()}');
         } else {
           emit(state.copyWith(listUsers: [
             InfoModel(
@@ -120,6 +126,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 room: ''),
             ...state.listUsers
           ], status: HomeStatus.success));
+          await response.pushDataToAppTelegram('Add use: ${(
+            isCheckIn: true,
+            cccd: '${mapList[0]}/${mapList[1]}',
+            name: mapList[2],
+            birthDay: mapList[3],
+            gender: mapList[4],
+            address: mapList[5],
+            createdDate: mapList[6],
+            createAt: DateTime.now().millisecondsSinceEpoch.toString(),
+          ).toString()}');
         }
         _writeFileCsv();
       } catch (e) {
