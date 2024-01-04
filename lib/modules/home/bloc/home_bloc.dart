@@ -82,7 +82,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         List<InfoModel> listNew = [...state.listUsers];
         barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
             '#7FFF94', 'Cancel', true, ScanMode.BARCODE);
-        emit(state.copyWith(status: HomeStatus.loading));
         // ignore: unrelated_type_equality_checks
         if (barcodeScanRes == -1) return;
         final mapList = barcodeScanRes.split('|').toList();
@@ -98,8 +97,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           listNew[indexExist].isCheckIn = !listNew[indexExist].isCheckIn;
           listNew[indexExist].updateAt =
               DateTime.now().millisecondsSinceEpoch.toString();
-          // emit(HomeState.setData(listNew));
-          emit(state.copyWith(listUsers: listNew, status: HomeStatus.success));
+          emit(state.copyWith(
+              listUsers: listNew,
+              status: listNew[indexExist].room.isNotEmpty
+                  ? HomeStatus.checkout
+                  : HomeStatus.success,
+              indexRoomCheckout:
+                  listNew[indexExist].room.isNotEmpty ? indexExist : -1));
         } else {
           emit(state.copyWith(listUsers: [
             InfoModel(
@@ -121,8 +125,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       } catch (e) {
         emit(state.copyWith(status: HomeStatus.failure));
         print('HomeScanQR$e');
-      } finally {
-        emit(state.copyWith(status: HomeStatus.success));
       }
     });
 
@@ -133,7 +135,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         final i = listNew.indexWhere((element) => event.id == element.id);
         listNew[i].room = event.room;
         _writeFileCsv();
-        // emit(HomeState.setData(listNew));
         emit(state.copyWith(listUsers: listNew, status: HomeStatus.success));
       } catch (e) {
         emit(state.copyWith(status: HomeStatus.failure));

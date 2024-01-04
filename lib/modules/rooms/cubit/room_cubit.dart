@@ -7,8 +7,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
-import 'package:my_room/extensions/date_extensions.dart';
-import 'package:my_room/models/info_model.dart';
 import 'package:my_room/models/room_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -113,42 +111,23 @@ class RoomCubit extends Cubit<RoomState> {
     }
   }
 
-  void updateAllRoom(List<InfoModel> listUsers) async {
+  void roomUpdateCheckout(String room, String timer) {
     try {
-      print('updtaining all');
       emit(state.copyWith(isLoading: true));
-      List<RoomModel> listRooms = [...state.listRoom];
-      if (listRooms.isEmpty || listUsers.isEmpty) {
-        return;
+      List<RoomModel> listNew = [...state.listRoom];
+      final checkIndex = listNew.indexWhere((element) => element.room == room);
+      if (checkIndex != -1) {
+        listNew[checkIndex].status = roomStatusE.Out.name;
+        listNew[checkIndex].timer = timer;
+        // emit(RoomState(listRoom: listNew));
+        emit(state.copyWith(listRoom: listNew, isLoading: false));
+        _writeRoomFile();
+      } else {
+        emit(state.copyWith(isLoading: false));
       }
-      for (var user in listUsers) {
-        var userStatus =
-            user.isCheckIn ? roomStatusE.In.name : roomStatusE.Out.name;
-        var indexRoom = listRooms.indexWhere(
-            // ignore: unrelated_type_equality_checks
-            (e) =>
-                user.room == e.room &&
-                // e.status == userStatus &&
-                e.status !=
-                    roomStatusE.Out.name); //need update item room != out
-        if (indexRoom != -1) {
-          listRooms[indexRoom].name = user.name;
-          listRooms[indexRoom].status = userStatus;
-          listRooms[indexRoom].timer = DateTime.now()
-              .aboutHour(user.updateAt, user.createAt); // checkin to checkout
-        } else {
-          print('else');
-          // listRooms[indexRoom].status = roomStatusE.Available.name;
-          // listRooms[indexRoom].name = '';
-          // listRooms[indexRoom].timer = '';
-        }
-      }
-      // emit(RoomState(listRoom: listRooms));
-      emit(state.copyWith(listRoom: listRooms, isLoading: false));
-      _writeRoomFile();
     } catch (e) {
       emit(state.copyWith(isLoading: false));
-      print('updateAllRoom$e');
+      print('RoomUpdate$e');
     }
   }
 

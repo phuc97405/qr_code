@@ -624,31 +624,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(15),
                       topRight: Radius.circular(15))),
-              child:
-                  BlocBuilder<HomeBloc, HomeState>(builder: (context, state) {
-                // if (state.status == HomeStatus.success) {
-                //   print('success add');
-                //   List<InfoModel> listSort = state.listUsers
-                //       .where((e) => e.room.isNotEmpty && e.updateAt.isNotEmpty)
-                //       .toList();
-                //   if (listSort.isNotEmpty) {
-                //     listSort.sort((a, b) => a.updateAt.compareTo(b.updateAt));
-                //   }
-                //   print(listSort.last.updateAt);
-                // context.read<RoomCubit>().roomUpdate(
-                //     '',
-                //     users[index].name,
-                //     users[index].isCheckIn
-                //         ? roomStatusE.In.name
-                //         : roomStatusE.Out.name,
-                //     room);
-                // context.read<RoomCubit>().updateAllRoom(state.listUsers);
-                // }
+              child: BlocBuilder<HomeBloc, HomeState>(
+                  // buildWhen: (previous, current) =>
+                  //     previous.status != current.status,
+                  builder: (context, state) {
+                if (state.status == HomeStatus.checkout) {
+                  print('room id ${state.indexRoomCheckout}');
+                  context.read<RoomCubit>().roomUpdateCheckout(
+                      state.listUsers[state.indexFilterDate].room,
+                      DateTime.now().aboutHour(
+                          state.listUsers[state.indexRoomCheckout!].updateAt,
+                          state.listUsers[state.indexRoomCheckout!].createAt));
+                }
+                print(state.status);
+
                 switch (state.status) {
                   case HomeStatus.loading:
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
+                  case HomeStatus.checkout:
                   case HomeStatus.success:
                     return _getFilteredList(state.listUsers).isEmpty
                         ? _emptyWidget()
