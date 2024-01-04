@@ -24,11 +24,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
-  List<DateTime> dateHistory = [];
+  // List<DateTime> dateHistory = [];
   bool isSearch = false;
   String textSearch = '';
   Timer? _debounce;
-  late int indexFilterDate = 0;
+  // late int indexFilterDate = 0;
 
   late List<String> listRoom =
       context.read<RoomCubit>().state.listRoom.map((e) => e.room).toList();
@@ -37,13 +37,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<DateTime> dateNew = List<DateTime>.generate(
         31,
         (i) => DateTime.utc(
-              dateHistory.last.year,
-              dateHistory.last.month,
-              dateHistory.last.day,
+              context.read<HomeBloc>().state.listDate.last.year,
+              context.read<HomeBloc>().state.listDate.last.month,
+              context.read<HomeBloc>().state.listDate.last.day,
             ).subtract(Duration(days: i + 1)));
-    setState(() {
-      dateHistory.addAll(dateNew);
-    });
+    // setState(() {
+    //   dateHistory.addAll(dateNew);
+    // });
+    context.read<HomeBloc>().add(HomeSetListDate(dateNew));
   }
 
   @override
@@ -86,13 +87,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     context.read<HomeBloc>().add(HomeLoadData());
-    dateHistory = List<DateTime>.generate(
+    context.read<HomeBloc>().add(HomeSetListDate(List<DateTime>.generate(
         30,
         (i) => DateTime.utc(
               DateTime.now().year,
               DateTime.now().month,
               DateTime.now().day,
-            ).subtract(Duration(days: i)));
+            ).subtract(Duration(days: i)))));
+    // dateHistory = List<DateTime>.generate(
+    //     30,
+    //     (i) => DateTime.utc(
+    //           DateTime.now().year,
+    //           DateTime.now().month,
+    //           DateTime.now().day,
+    //         ).subtract(Duration(days: i)));
   }
 
   Widget _emptyWidget() {
@@ -403,17 +411,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ));
   }
 
-  void handleFilter(int index) {
-    setState(() {
-      indexFilterDate = index;
-    });
-  }
-
   List<InfoModel> _getFilteredList(List<InfoModel> listUsers) {
     List<InfoModel> listNew = listUsers
         .where((element) => DateTime.now().isSameDate(
             DateTime.fromMillisecondsSinceEpoch(int.parse(element.createAt)),
-            dateHistory[indexFilterDate]))
+            context
+                .read<HomeBloc>()
+                .state
+                .listDate[context.read<HomeBloc>().state.indexFilterDate]))
         .toList();
     if (context.read<HomeBloc>().state.searchController.text.isEmpty) {
       return listNew;
@@ -426,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       setState(() {
         textSearch = query;
       });
@@ -562,58 +567,65 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                   return true;
                 },
-                child: ListView(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    shrinkWrap: true,
-                    itemExtent: 70,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    reverse: true,
-                    children: List.generate(
-                        dateHistory.length,
-                        (index) => GestureDetector(
-                              onTap: () => handleFilter(index),
-                              child: Container(
-                                  margin: const EdgeInsets.only(right: 10),
-                                  decoration: BoxDecoration(
-                                      color: index == indexFilterDate
-                                          ? Colors.green
-                                          : Colors.grey.withOpacity(0.3),
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(10))),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        '${DateTime.parse(dateHistory[index].toString()).day}',
-                                        style: const TextStyle(
-                                            fontSize: 22,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w500),
-                                      ),
-                                      // .animate()
-                                      // .tint(color: Colors.white)
-                                      // .then()
-                                      // .shake(),
-                                      Text(
-                                        WeekdayE
-                                            .values[DateTime.parse(
-                                                        dateHistory[index]
+                child: BlocBuilder<HomeBloc, HomeState>(
+                  builder: (context, state) {
+                    return ListView(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        shrinkWrap: true,
+                        itemExtent: 70,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        reverse: true,
+                        children: List.generate(
+                            state.listDate.length,
+                            (index) => GestureDetector(
+                                  onTap: () => context
+                                      .read<HomeBloc>()
+                                      .add(HomeSetIndexFilterDate(index)),
+                                  child: Container(
+                                      margin: const EdgeInsets.only(right: 10),
+                                      decoration: BoxDecoration(
+                                          color: index == state.indexFilterDate
+                                              ? Colors.green
+                                              : Colors.grey.withOpacity(0.3),
+                                          borderRadius: const BorderRadius.all(
+                                              Radius.circular(10))),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            '${DateTime.parse(state.listDate[index].toString()).day}',
+                                            style: const TextStyle(
+                                                fontSize: 22,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                          // .animate()
+                                          // .tint(color: Colors.white)
+                                          // .then()
+                                          // .shake(),
+                                          Text(
+                                            WeekdayE
+                                                .values[DateTime.parse(state
+                                                            .listDate[index]
                                                             .toString())
-                                                    .weekday -
-                                                1]
-                                            .name,
-                                        style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w500),
-                                      )
-                                          .animate()
-                                          .tint(color: Colors.white)
-                                          .then()
-                                          .shake(),
-                                    ],
-                                  )),
-                            )).toList()),
+                                                        .weekday -
+                                                    1]
+                                                .name,
+                                            style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500),
+                                          )
+                                              .animate()
+                                              .tint(color: Colors.white)
+                                              .then()
+                                              .shake(),
+                                        ],
+                                      )),
+                                )).toList());
+                  },
+                ),
               ),
             ),
             Flexible(

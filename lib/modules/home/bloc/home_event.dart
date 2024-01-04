@@ -33,3 +33,15 @@ final class HomeSearchNameOfUser extends HomeEvent {
 
   const HomeSearchNameOfUser(this.keyword);
 }
+
+final class HomeSetIndexFilterDate extends HomeEvent {
+  final int? index;
+
+  const HomeSetIndexFilterDate(this.index);
+}
+
+final class HomeSetListDate extends HomeEvent {
+  final List<DateTime> listDate;
+
+  const HomeSetListDate(this.listDate);
+}

@@ -157,6 +157,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         print('HomeAddRoomToUser$e');
       }
     });
+
+    on<HomeSetIndexFilterDate>((event, emit) {
+      emit(state.copyWith(indexFilterDate: event.index));
+    });
+
+    on<HomeSetListDate>(
+        (event, emit) => emit(state.copyWith(listDate: event.listDate)));
   }
 
   void _writeFileCsv() async {

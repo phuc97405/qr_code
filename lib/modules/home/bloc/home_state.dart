@@ -16,6 +16,7 @@ final class HomeState extends Equatable {
   final TextEditingController searchController = TextEditingController();
   final int indexFilterDate;
   final int? indexRoomCheckout;
+  final List<DateTime> listDate;
   // bool isLoading;
 
   HomeState._(
@@ -23,19 +24,22 @@ final class HomeState extends Equatable {
       this.listUsers = const [],
       // this.isLoading = true,
       this.indexFilterDate = 0,
-      this.indexRoomCheckout = -1});
+      this.indexRoomCheckout = -1,
+      this.listDate = const []});
 
   HomeState copyWith(
       {HomeStatus? status,
       List<InfoModel>? listUsers,
       int? indexFilterDate,
       bool? isLoading,
-      int? indexRoomCheckout}) {
+      int? indexRoomCheckout,
+      List<DateTime>? listDate}) {
     return HomeState._(
         status: status ?? this.status,
         listUsers: listUsers ?? this.listUsers,
         indexFilterDate: indexFilterDate ?? this.indexFilterDate,
-        indexRoomCheckout: indexRoomCheckout ?? this.indexRoomCheckout);
+        indexRoomCheckout: indexRoomCheckout ?? this.indexRoomCheckout,
+        listDate: listDate ?? this.listDate);
   }
 
   HomeState.initial() : this._();
