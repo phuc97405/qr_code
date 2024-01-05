@@ -24,8 +24,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Repository response = Repository(myApiProvide);
     on<HomeLoadData>((event, emit) async {
       try {
+        List<DateTime> listDate = List<DateTime>.generate(
+            30,
+            (i) => DateTime.utc(
+                  DateTime.now().year,
+                  DateTime.now().month,
+                  DateTime.now().day,
+                ).subtract(Duration(days: i)));
         // ignore: unrelated_type_equality_checks
-        emit(state.copyWith(status: HomeStatus.loading));
+        emit(state.copyWith(status: HomeStatus.loading, listDate: listDate));
         if (await Permission.storage.status != PermissionStatus.granted) return;
         final directory = await getExternalStorageDirectory();
         final path = '${directory?.path}/users.csv';
@@ -61,7 +68,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         emit(state.copyWith(status: HomeStatus.failure));
         print('HomeLoadData: $e');
       } finally {
-        emit(state.copyWith(status: HomeStatus.success));
+        emit(state.copyWith(
+          status: HomeStatus.success,
+        ));
       }
     });
 
@@ -90,6 +99,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         if (barcodeScanRes == -1) return;
         final mapList = barcodeScanRes.split('|').toList();
         if (mapList.length != 7) return;
+        emit(state.copyWith(status: HomeStatus.loading));
         var indexExist = listNew.indexWhere((element) =>
             element.cccd == '${mapList[0]}/${mapList[1]}' &&
             element.isCheckIn &&
@@ -98,18 +108,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 DateTime.fromMillisecondsSinceEpoch(
                     int.parse(element.createAt))));
         if (indexExist != -1) {
-          listNew[indexExist].isCheckIn = !listNew[indexExist].isCheckIn;
+          listNew[indexExist].isCheckIn = false;
           listNew[indexExist].updateAt =
               DateTime.now().millisecondsSinceEpoch.toString();
+          bool roomIsEmpty = listNew[indexExist].room.isEmpty;
           emit(state.copyWith(
-              listUsers: listNew,
-              status: listNew[indexExist].room.isNotEmpty
-                  ? HomeStatus.checkout
-                  : HomeStatus.success,
-              indexRoomCheckout:
-                  listNew[indexExist].room.isNotEmpty ? indexExist : -1));
-          await response.pushDataToAppTelegram(
-              'Update user: ${listNew[indexExist].toString()}');
+            listUsers: [...listNew],
+            indexRoomCheckout: roomIsEmpty ? -1 : indexExist,
+            status: roomIsEmpty ? HomeStatus.success : HomeStatus.checkout,
+          ));
+          // await response.pushDataToAppTelegram(
+          //     'Update user: ${listNew[indexExist].toString()}');
         } else {
           emit(state.copyWith(listUsers: [
             InfoModel(
@@ -126,7 +135,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 room: ''),
             ...state.listUsers
           ], status: HomeStatus.success));
-          await response.pushDataToAppTelegram('Add use: ${(
+          await response.pushDataToAppTelegram('Add user: ${(
             isCheckIn: true,
             cccd: '${mapList[0]}/${mapList[1]}',
             name: mapList[2],
@@ -162,8 +171,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(state.copyWith(indexFilterDate: event.index));
     });
 
-    on<HomeSetListDate>(
-        (event, emit) => emit(state.copyWith(listDate: event.listDate)));
+    on<HomeSetListDate>((event, emit) {
+      emit(state.copyWith(listDate: [...state.listDate, ...event.listDate]));
+    });
+
+    on<HomeLoadMoreDate>((event, emit) {
+      List<DateTime> dateNew = List<DateTime>.generate(
+          31,
+          (i) => DateTime.utc(
+                state.listDate.last.year,
+                state.listDate.last.month,
+                state.listDate.last.day,
+              ).subtract(Duration(days: i + 1))).toList();
+      emit(state.copyWith(listDate: List.of(state.listDate)..addAll(dateNew)));
+    });
   }
 
   void _writeFileCsv() async {

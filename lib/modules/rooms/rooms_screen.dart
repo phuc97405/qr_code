@@ -57,6 +57,7 @@ class _RoomScreenState extends State<RoomScreen> {
         'lib/images/room.png',
         width: 300,
         height: 250,
+        color: Colors.green,
         fit: BoxFit.contain,
       ),
     );

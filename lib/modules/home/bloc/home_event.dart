@@ -45,3 +45,5 @@ final class HomeSetListDate extends HomeEvent {
 
   const HomeSetListDate(this.listDate);
 }
+
+final class HomeLoadMoreDate extends HomeEvent {}

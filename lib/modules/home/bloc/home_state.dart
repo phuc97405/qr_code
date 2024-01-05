@@ -15,14 +15,12 @@ final class HomeState extends Equatable {
   final HomeStatus status;
   final TextEditingController searchController = TextEditingController();
   final int indexFilterDate;
-  final int? indexRoomCheckout;
+  final int indexRoomCheckout;
   final List<DateTime> listDate;
-  // bool isLoading;
 
   HomeState._(
       {this.status = HomeStatus.initial,
       this.listUsers = const [],
-      // this.isLoading = true,
       this.indexFilterDate = 0,
       this.indexRoomCheckout = -1,
       this.listDate = const []});
@@ -46,9 +44,10 @@ final class HomeState extends Equatable {
 
   @override
   String toString() {
-    return '''HomeState { listUsers: ${listUsers.length}, status: $status, indexFilterDate: $indexFilterDate }''';
+    return '''HomeState { listUsers: ${listUsers.length}, status: $status, indexFilterDate: $indexFilterDate ,listDate: $listDate}''';
   }
 
   @override
-  List<Object> get props => [listUsers, indexFilterDate, status];
+  List<Object> get props =>
+      [listUsers, indexFilterDate, status, indexRoomCheckout, listDate];
 }

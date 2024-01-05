@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_room/components/base_widgets.dart';
 import 'package:my_room/constants/enums/date_enum.dart';
@@ -24,28 +23,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
-  // List<DateTime> dateHistory = [];
   bool isSearch = false;
   String textSearch = '';
   Timer? _debounce;
-  // late int indexFilterDate = 0;
-
-  late List<String> listRoom =
-      context.read<RoomCubit>().state.listRoom.map((e) => e.room).toList();
-
-  void loadMoreWhenScrollFilter() {
-    final List<DateTime> dateNew = List<DateTime>.generate(
-        31,
-        (i) => DateTime.utc(
-              context.read<HomeBloc>().state.listDate.last.year,
-              context.read<HomeBloc>().state.listDate.last.month,
-              context.read<HomeBloc>().state.listDate.last.day,
-            ).subtract(Duration(days: i + 1)));
-    // setState(() {
-    //   dateHistory.addAll(dateNew);
-    // });
-    context.read<HomeBloc>().add(HomeSetListDate(dateNew));
-  }
 
   @override
   void dispose() {
@@ -87,20 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     context.read<HomeBloc>().add(HomeLoadData());
-    context.read<HomeBloc>().add(HomeSetListDate(List<DateTime>.generate(
-        30,
-        (i) => DateTime.utc(
-              DateTime.now().year,
-              DateTime.now().month,
-              DateTime.now().day,
-            ).subtract(Duration(days: i)))));
-    // dateHistory = List<DateTime>.generate(
-    //     30,
-    //     (i) => DateTime.utc(
-    //           DateTime.now().year,
-    //           DateTime.now().month,
-    //           DateTime.now().day,
-    //         ).subtract(Duration(days: i)));
   }
 
   Widget _emptyWidget() {
@@ -471,6 +437,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   left: 8.0,
                 ),
                 child: TextField(
+                  onTapOutside: (event) {
+                    FocusScope.of(context).unfocus();
+                  },
                   autofocus: true,
                   controller: context.read<HomeBloc>().state.searchController,
                   onChanged: _onSearchChanged,
@@ -495,15 +464,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         context.read<HomeBloc>().state.searchController.clear(),
                       },
                     ),
-                    prefixIcon: IconButton(
-                      icon: const Icon(
-                        Icons.search,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        // Perform the search here
-                      },
-                    ),
+                    // prefixIcon: IconButton(
+                    //   icon: const Icon(
+                    //     Icons.search,
+                    //     color: Colors.white,
+                    //   ),
+                    //   onPressed: () {
+                    //     // Perform the search here
+                    //   },
+                    // ),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10.0),
                         borderSide:
@@ -563,11 +532,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: NotificationListener(
                 onNotification: (notification) {
                   if (notification is ScrollEndNotification) {
-                    loadMoreWhenScrollFilter();
+                    context.read<HomeBloc>().add(HomeLoadMoreDate());
                   }
                   return true;
                 },
                 child: BlocBuilder<HomeBloc, HomeState>(
+                  // buildWhen: (previous, current) => previous.listDate!=current.listDate,
                   builder: (context, state) {
                     return ListView(
                         controller: _scrollController,
@@ -615,12 +585,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 .name,
                                             style: const TextStyle(
                                                 fontSize: 15,
+                                                color: Colors.white,
                                                 fontWeight: FontWeight.w500),
                                           )
-                                              .animate()
-                                              .tint(color: Colors.white)
-                                              .then()
-                                              .shake(),
+                                          // .animate()
+                                          // .tint(color: Colors.white)
+                                          // .then()
+                                          // .shake(),
                                         ],
                                       )),
                                 )).toList());
@@ -636,20 +607,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(15),
                       topRight: Radius.circular(15))),
-              child: BlocBuilder<HomeBloc, HomeState>(
-                  // buildWhen: (previous, current) =>
-                  //     previous.status != current.status,
-                  builder: (context, state) {
+              child:
+                  BlocBuilder<HomeBloc, HomeState>(builder: (context, state) {
                 if (state.status == HomeStatus.checkout) {
-                  print('room id ${state.indexRoomCheckout}');
                   context.read<RoomCubit>().roomUpdateCheckout(
                       state.listUsers[state.indexFilterDate].room,
                       DateTime.now().aboutHour(
-                          state.listUsers[state.indexRoomCheckout!].updateAt,
-                          state.listUsers[state.indexRoomCheckout!].createAt));
+                          state.listUsers[state.indexRoomCheckout].updateAt,
+                          state.listUsers[state.indexRoomCheckout].createAt));
                 }
-                print(state.status);
-
                 switch (state.status) {
                   case HomeStatus.loading:
                     return const Center(
