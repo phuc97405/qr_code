@@ -47,3 +47,9 @@ final class HomeSetListDate extends HomeEvent {
 }
 
 final class HomeLoadMoreDate extends HomeEvent {}
+
+final class HomeSetIsShowSearch extends HomeEvent {
+  final bool isShowSearch;
+
+  const HomeSetIsShowSearch(this.isShowSearch);
+}

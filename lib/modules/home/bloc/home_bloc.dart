@@ -5,6 +5,7 @@ import 'package:csv/csv.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -184,6 +185,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 state.listDate.last.day,
               ).subtract(Duration(days: i + 1))).toList();
       emit(state.copyWith(listDate: List.of(state.listDate)..addAll(dateNew)));
+    });
+
+    on<HomeSetIsShowSearch>((event, emit) {
+      emit(state.copyWith(
+        isShowInputSearch: event.isShowSearch,
+      ));
     });
   }
 

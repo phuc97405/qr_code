@@ -23,8 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
-  bool isSearch = false;
-  String textSearch = '';
+  final TextEditingController searchController = TextEditingController();
   Timer? _debounce;
 
   @override
@@ -386,12 +385,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 .state
                 .listDate[context.read<HomeBloc>().state.indexFilterDate]))
         .toList();
-    if (context.read<HomeBloc>().state.searchController.text.isEmpty) {
+    if (searchController.text.isEmpty) {
       return listNew;
     }
     return listNew
-        .where((user) => user.name.toLowerCase().contains(
-            context.read<HomeBloc>().state.searchController.text.toLowerCase()))
+        .where((user) => user.name
+            .toLowerCase()
+            .contains(searchController.text.toLowerCase()))
         .toList();
   }
 
@@ -399,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
       setState(() {
-        textSearch = query;
+        searchController.text = query;
       });
     });
   }
@@ -430,73 +430,80 @@ class _HomeScreenState extends State<HomeScreen> {
             )),
         leadingWidth: 50,
         centerTitle: true,
-        title: isSearch
-            ? Container(
-                height: 55,
-                padding: const EdgeInsets.only(
-                  left: 8.0,
-                ),
-                child: TextField(
-                  onTapOutside: (event) {
-                    FocusScope.of(context).unfocus();
-                  },
-                  autofocus: true,
-                  controller: context.read<HomeBloc>().state.searchController,
-                  onChanged: _onSearchChanged,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold),
-                  decoration: InputDecoration(
-                    fillColor: Colors.grey,
-                    filled: true,
-                    hintText: 'Search...',
-                    hintStyle: const TextStyle(color: Colors.white),
-                    suffixIcon: IconButton(
-                      icon: const Icon(
-                        Icons.clear,
-                        color: Colors.white,
+        title: BlocBuilder<HomeBloc, HomeState>(
+            buildWhen: (previous, current) =>
+                previous.isShowInputSearch != current.isShowInputSearch,
+            builder: (context, state) {
+              return state.isShowInputSearch
+                  ? Container(
+                      height: 55,
+                      padding: const EdgeInsets.only(
+                        left: 8.0,
                       ),
-                      onPressed: () => {
-                        setState(() {
-                          isSearch = false;
-                        }),
-                        context.read<HomeBloc>().state.searchController.clear(),
-                      },
-                    ),
-                    // prefixIcon: IconButton(
-                    //   icon: const Icon(
-                    //     Icons.search,
-                    //     color: Colors.white,
-                    //   ),
-                    //   onPressed: () {
-                    //     // Perform the search here
-                    //   },
-                    // ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        borderSide:
-                            const BorderSide(color: Colors.white, width: 1)),
-                  ),
-                ),
-              )
-            : const Text(
-                "My Room",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20),
-              ),
+                      child: TextField(
+                        onTapOutside: (event) {
+                          FocusScope.of(context).unfocus();
+                        },
+                        autofocus: true,
+                        controller:
+                            // context.read<HomeBloc>().
+                            searchController,
+                        onChanged: _onSearchChanged,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          fillColor: Colors.grey,
+                          filled: true,
+                          hintText: 'Search...',
+                          hintStyle: const TextStyle(color: Colors.white),
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.clear,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => {
+                              context
+                                  .read<HomeBloc>()
+                                  .add(const HomeSetIsShowSearch(false)),
+                              searchController.clear(),
+                            },
+                          ),
+                          // prefixIcon: IconButton(
+                          //   icon: const Icon(
+                          //     Icons.search,
+                          //     color: Colors.white,
+                          //   ),
+                          //   onPressed: () {
+                          //     // Perform the search here
+                          //   },
+                          // ),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                              borderSide: const BorderSide(
+                                  color: Colors.white, width: 1)),
+                        ),
+                      ),
+                    )
+                  : const Text(
+                      "My Room",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20),
+                    );
+            }),
         actions: [
-          isSearch
+          context.read<HomeBloc>().state.isShowInputSearch
               ? const SizedBox()
               : Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: GestureDetector(
                       onTap: () {
-                        setState(() {
-                          isSearch = true;
-                        });
+                        context
+                            .read<HomeBloc>()
+                            .add(const HomeSetIsShowSearch(true));
                       },
                       child: const Icon(
                         Icons.search,
