@@ -495,22 +495,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
             }),
         actions: [
-          context.read<HomeBloc>().state.isShowInputSearch
-              ? const SizedBox()
-              : Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: GestureDetector(
-                      onTap: () {
-                        context
-                            .read<HomeBloc>()
-                            .add(const HomeSetIsShowSearch(true));
-                      },
-                      child: const Icon(
-                        Icons.search,
-                        color: Colors.white,
-                        size: 30,
-                      )),
-                ),
+          BlocBuilder<HomeBloc, HomeState>(
+              buildWhen: (previous, current) =>
+                  previous.isShowInputSearch != current.isShowInputSearch,
+              builder: (context, state) {
+                return state.isShowInputSearch
+                    ? const SizedBox()
+                    : Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: GestureDetector(
+                            onTap: () {
+                              context
+                                  .read<HomeBloc>()
+                                  .add(const HomeSetIsShowSearch(true));
+                            },
+                            child: const Icon(
+                              Icons.search,
+                              color: Colors.white,
+                              size: 30,
+                            )),
+                      );
+              })
         ],
       ),
       floatingActionButton: FloatingActionButton(

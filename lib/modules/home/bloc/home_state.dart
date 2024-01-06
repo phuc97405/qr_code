@@ -45,7 +45,7 @@ final class HomeState extends Equatable {
     );
   }
 
-  HomeState.initial() : this._();
+  const HomeState.initial() : this._();
 
   @override
   String toString() {
