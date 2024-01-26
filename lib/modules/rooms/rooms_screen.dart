@@ -17,15 +17,12 @@ class RoomScreen extends StatefulWidget {
 }
 
 class _RoomScreenState extends State<RoomScreen> {
-  // TextEditingController roomController = TextEditingController(text: '200');
-  // TextEditingController peopleController = TextEditingController(text: '2');
-
   void showAlertDialog(context) => showCupertinoDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: const Text('Permission Denied'),
-          content: const Text('Allow access to storage'),
+          content: const Text('Allow access to camera'),
           actions: <CupertinoDialogAction>[
             CupertinoDialogAction(
               onPressed: () => Navigator.of(context).pop(),
@@ -40,15 +37,55 @@ class _RoomScreenState extends State<RoomScreen> {
         ),
       );
 
-  Future<bool> _checkPermission(Permission permission) async {
-    var status = await permission.request();
-    // print(status);
-    if (status != PermissionStatus.granted) {
+  Future<bool> _checkPermission(Permission per, String title) async {
+    final permission = per;
+    if (await permission.isDenied) {
       // ignore: use_build_context_synchronously
-      showAlertDialog(context);
+      _showDialogPermission(context, per, title);
+
+      if (await permission.status.isGranted) {
+        return true;
+        // Permission is granted
+      } else if (await permission.status.isDenied) {
+        return false;
+        // Permission is denied
+      } else if (await permission.status.isPermanentlyDenied) {
+        // ignore: use_build_context_synchronously
+        showAlertDialog(context);
+      }
       return false;
+    } else if (await permission.status.isGranted) {
+      return true;
     }
-    return true;
+    // ignore: use_build_context_synchronously
+    showAlertDialog(context);
+    return false;
+  }
+
+  Future<void> _showDialogPermission(
+      BuildContext context, Permission per, String title) {
+    return showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Notion"),
+            content: Text("I need $title Permission To Use App"),
+            actions: [
+              TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  }),
+              TextButton(
+                  child: const Text("Grant Permission"),
+                  onPressed: () async {
+                    await per.request();
+                    // ignore: use_build_context_synchronously
+                    Navigator.pop(context);
+                  }),
+            ],
+          );
+        });
   }
 
   Widget _emptyRoom() {
@@ -157,7 +194,7 @@ class _RoomScreenState extends State<RoomScreen> {
                             .text) >
                         0) {
                   // handleAddRoom();
-                  if (await _checkPermission(Permission.storage)) {
+                  if (await _checkPermission(Permission.storage, 'Storage')) {
                     // ignore: use_build_context_synchronously
                     context.read<RoomCubit>().roomAdd(
                         // ignore: use_build_context_synchronously
@@ -310,6 +347,14 @@ class _RoomScreenState extends State<RoomScreen> {
                         )))),
       ]),
     );
+  }
+
+  @override
+  void dispose() {
+    context.read<RoomCubit>().state.roomController.dispose();
+    context.read<RoomCubit>().state.peopleController.dispose();
+
+    super.dispose();
   }
 
   @override

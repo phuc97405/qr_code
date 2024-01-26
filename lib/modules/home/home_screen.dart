@@ -52,14 +52,55 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  Future<bool> _checkPermission(Permission permission) async {
-    var status = await permission.request();
-    if (status != PermissionStatus.granted) {
+  Future<bool> _checkPermission(Permission per, String title) async {
+    final permission = per;
+    if (await permission.isDenied) {
       // ignore: use_build_context_synchronously
-      showAlertDialog(context);
+      _showDialogPermission(context, per, title);
+
+      if (await permission.status.isGranted) {
+        return true;
+        // Permission is granted
+      } else if (await permission.status.isDenied) {
+        return false;
+        // Permission is denied
+      } else if (await permission.status.isPermanentlyDenied) {
+        // ignore: use_build_context_synchronously
+        showAlertDialog(context);
+      }
       return false;
+    } else if (await permission.status.isGranted) {
+      return true;
     }
-    return true;
+    // ignore: use_build_context_synchronously
+    showAlertDialog(context);
+    return false;
+  }
+
+  Future<void> _showDialogPermission(
+      BuildContext context, Permission per, String title) {
+    return showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Notion"),
+            content: Text("I need $title Permission To Use App"),
+            actions: [
+              TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  }),
+              TextButton(
+                  child: const Text("Grant Permission"),
+                  onPressed: () async {
+                    await per.request();
+                    // ignore: use_build_context_synchronously
+                    Navigator.pop(context);
+                  }),
+            ],
+          );
+        });
   }
 
   @override
@@ -337,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context.read<HomeBloc>().add(
                                     HomeAddRoomToUser(users[index].id, room!));
                                 if (await _checkPermission(
-                                    Permission.storage)) {
+                                    Permission.storage, 'Storage')) {
                                   // ignore: use_build_context_synchronously
                                   context.read<RoomCubit>().roomUpdate(
                                       '',
@@ -522,7 +563,7 @@ class _HomeScreenState extends State<HomeScreen> {
         heroTag: 'scanQr',
         tooltip: 'scan', // used by assistive technologies
         onPressed: () async {
-          if (await _checkPermission(Permission.camera)) {
+          if (await _checkPermission(Permission.camera, 'Camera')) {
             // ignore: use_build_context_synchronously
             context.read<HomeBloc>().add(const HomeScanQR());
           }

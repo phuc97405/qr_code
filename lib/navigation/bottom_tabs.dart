@@ -68,45 +68,39 @@ class _BottomTabsState extends State<BottomTabs> {
     if (!await launch(_tel)) throw 'Could not launch $_tel';
   }
 
-  void showAlertDialog(context) => showCupertinoDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) => CupertinoAlertDialog(
-          title: const Text('Permission Denied'),
-          content: const Text('Allow access to storage & camera'),
-          actions: <CupertinoDialogAction>[
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => openAppSettings(),
-              child: const Text('Settings'),
-            ),
-          ],
-        ),
-      );
-  Future<bool> _checkPermission() async {
-    Map<Permission, PermissionStatus> statuses =
-        await [Permission.camera, Permission.storage].request();
+  // void showAlertDialog(context) => showCupertinoDialog<void>(
+  //       context: context,
+  //       barrierDismissible: false,
+  //       builder: (BuildContext context) => CupertinoAlertDialog(
+  //         title: const Text('Permission Denied'),
+  //         content: const Text('Allow access to storage & camera'),
+  //         actions: <CupertinoDialogAction>[
+  //           CupertinoDialogAction(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: const Text('Cancel'),
+  //           ),
+  //           CupertinoDialogAction(
+  //             isDefaultAction: true,
+  //             onPressed: () => openAppSettings(),
+  //             child: const Text('Settings'),
+  //           ),
+  //         ],
+  //       ),
+  //     );
+  // Future<bool> _checkPermission() async {
+  //   Map<Permission, PermissionStatus> statuses =
+  //       await [Permission.camera, Permission.storage].request();
 
-    if (statuses[Permission.camera] == PermissionStatus.granted &&
-        statuses[Permission.storage] == PermissionStatus.granted) {
-      return true;
-    } else {
-      print(false);
-      // ignore: use_build_context_synchronously
-      showAlertDialog(context);
-      return false;
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _checkPermission();
-  }
+  //   if (statuses[Permission.camera] == PermissionStatus.granted &&
+  //       statuses[Permission.storage] == PermissionStatus.granted) {
+  //     return true;
+  //   } else {
+  //     print(false);
+  //     // ignore: use_build_context_synchronously
+  //     // showAlertDialog(context);
+  //     return false;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
